@@ -1,0 +1,173 @@
+// Prisma schema for user-service
+// Manages user profiles, addresses, payment methods, and preferences
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Profile - Extended user information
+// Linked to auth-service user via userId (same ID)
+model UserProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique // Same as auth-service User.id
+  email     String   @unique // Denormalized for quick lookups
+  firstName String?
+  lastName  String?
+  phone     String?
+  avatarUrl String?
+  dateOfBirth DateTime?
+  gender    String? // 'male', 'female', 'other', 'prefer-not-to-say'
+  
+  // E-commerce specific
+  preferredCurrency String? @default("USD")
+  preferredLanguage String? @default("en")
+  newsletterSubscribed Boolean @default(false)
+  marketingOptIn Boolean @default(false)
+  
+  // Account status (synced from auth-service via events)
+  isActive Boolean @default(true)
+  emailVerified Boolean @default(false)
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastLoginAt DateTime?
+  
+  // Relations
+  addresses      Address[]
+  paymentMethods PaymentMethod[]
+  preferences    UserPreference[]
+  wishlistItems  WishlistItem[]
+  
+  @@index([userId])
+  @@index([email])
+  @@index([isActive])
+  @@map("user_profiles")
+}
+
+// Address - Shipping and billing addresses
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  user      UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  
+  // Address type
+  type      String   // 'shipping', 'billing', 'both'
+  isDefault Boolean  @default(false)
+  
+  // Address details
+  firstName String
+  lastName  String
+  company   String?
+  addressLine1 String
+  addressLine2 String?
+  city      String
+  state     String?
+  postalCode String
+  country   String
+  phone     String?
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([userId, type])
+  @@map("addresses")
+}
+
+// Payment Method - Credit cards, PayPal, etc.
+model PaymentMethod {
+  id        String   @id @default(cuid())
+  userId    String
+  user      UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  
+  // Payment method type
+  type      String   // 'credit_card', 'debit_card', 'paypal', 'bank_account'
+  isDefault Boolean  @default(false)
+  
+  // Card details (stored securely, last 4 digits only in plain text)
+  cardType  String?  // 'visa', 'mastercard', 'amex', etc.
+  last4     String?  // Last 4 digits of card
+  expiryMonth String?
+  expiryYear  String?
+  cardholderName String?
+  
+  // Billing address (reference to Address)
+  billingAddressId String?
+  
+  // Payment provider token (for secure storage)
+  providerToken String? // Encrypted token from payment provider
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([userId, type])
+  @@map("payment_methods")
+}
+
+// User Preferences - Key-value store for user settings
+model UserPreference {
+  id        String   @id @default(cuid())
+  userId    String
+  user      UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  
+  key       String   // e.g., 'theme', 'notifications', 'currency'
+  value     String   // JSON string or simple value
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, key])
+  @@index([userId])
+  @@map("user_preferences")
+}
+
+// Wishlist Item - Products user wants to buy later
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  
+  productId String   // Reference to product-service product ID
+  productName String? // Denormalized for quick display
+  productImageUrl String?
+  productPrice String? // Denormalized price at time of adding
+  
+  notes     String?  // User notes about this item
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+  @@map("wishlist_items")
+}
+
+// Event Log - Track consumed events for idempotency
+model EventLog {
+  id        String   @id @default(cuid())
+  eventId   String   @unique // Event ID from source service
+  eventType String   // 'user.created', 'user.updated', etc.
+  source    String   // 'auth-service', etc.
+  payload   String   // JSON string of event payload
+  processed Boolean  @default(false)
+  processedAt DateTime?
+  error     String?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([eventId])
+  @@index([eventType])
+  @@index([processed])
+  @@map("event_logs")
+}
+

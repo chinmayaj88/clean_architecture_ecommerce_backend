@@ -1,0 +1,151 @@
+// Prisma schema for auth-service
+// This service manages authentication, authorization, and user sessions
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User entity - represents an authenticated user
+// Note: This is auth-service's view. Full user profile lives in user-service
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String   // bcrypt hash
+  emailVerified Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Account lockout fields
+  failedLoginAttempts Int      @default(0)
+  lockedUntil         DateTime?
+  
+  // Relations
+  refreshTokens        RefreshToken[]
+  roles               UserRole[]
+  passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  securityAuditLogs   SecurityAuditLog[]
+
+  @@index([email])
+  @@index([isActive])
+  @@index([lockedUntil])
+  @@map("users")
+}
+
+// Role entity - RBAC roles
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users UserRole[]
+
+  @@map("roles")
+}
+
+// User-Role many-to-many relationship
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+// Refresh token for JWT rotation
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique // JWT refresh token
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// Rate limiting tracking (optional - can also use Redis)
+model RateLimit {
+  id        String   @id @default(cuid())
+  key       String   // IP address, user ID, or custom key
+  count     Int      @default(1)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([key])
+  @@index([expiresAt])
+  @@map("rate_limits")
+}
+
+// Password reset token
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique // Unique reset token
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+// Email verification token
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique // Unique verification token
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  verifiedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("email_verification_tokens")
+}
+
+// Security audit log for tracking sensitive operations
+model SecurityAuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action      String   // e.g., 'login_failed', 'login_success', 'password_changed', 'account_locked', etc.
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?    // Additional context (e.g., reason for lockout)
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("security_audit_logs")
+}
+

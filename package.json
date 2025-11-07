@@ -1,0 +1,41 @@
+{
+  "name": "ecommerce-microservices",
+  "version": "1.0.0",
+  "description": "Production-grade microservices architecture on AWS",
+  "private": true,
+  "workspaces": [
+    "services/*",
+    "shared/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"**/*.{ts,js,json,md,yml,yaml}\"",
+    "dev": "docker-compose -f docker-compose.dev.yml up -d",
+    "dev:down": "docker-compose -f docker-compose.dev.yml down",
+    "clean": "rm -rf node_modules dist coverage && find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
+  },
+  "devDependencies": {
+    "@prisma/client": "^6.19.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-prettier": "^5.1.3",
+    "prettier": "^3.2.5",
+    "prisma": "^6.19.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/ecommerce-microservices.git"
+  },
+  "license": "MIT"
+}

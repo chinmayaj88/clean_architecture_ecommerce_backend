@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database for auth-service
+  postgres-auth:
+    image: postgres:15-alpine
+    container_name: postgres-auth
+    environment:
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_pass
+      POSTGRES_DB: auth_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-auth-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-network
+
+  # PostgreSQL database for user-service
+  postgres-user:
+    image: postgres:15-alpine
+    container_name: postgres-user
+    environment:
+      POSTGRES_USER: user_user
+      POSTGRES_PASSWORD: user_pass
+      POSTGRES_DB: user_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres-user-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-network
+
+  # PostgreSQL database for product-service
+  postgres-product:
+    image: postgres:15-alpine
+    container_name: postgres-product
+    environment:
+      POSTGRES_USER: product_user
+      POSTGRES_PASSWORD: product_pass
+      POSTGRES_DB: product_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-product-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U product_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-network
+
+  # Redis for caching and distributed rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-network
+
+  # LocalStack for AWS services emulation (SNS/SQS)
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    environment:
+      - SERVICES=sns,sqs
+      - DEBUG=0
+      - DATA_DIR=/var/lib/localstack
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - PERSISTENCE=1
+    ports:
+      - "4566:4566"  # LocalStack Edge Port
+      - "4510-4559:4510-4559"  # External services port range
+    volumes:
+      - localstack-data:/var/lib/localstack
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Adminer - Web-based database management tool
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres-auth
+    depends_on:
+      - postgres-auth
+      - postgres-user
+      - postgres-product
+    networks:
+      - ecommerce-network
+
+volumes:
+  postgres-auth-data:
+  postgres-user-data:
+  postgres-product-data:
+  redis-data:
+  localstack-data:
+
+networks:
+  ecommerce-network:
+    driver: bridge
+

@@ -1,0 +1,517 @@
+openapi: 3.0.3
+info:
+  title: User Service API
+  description: User profile management service with e-commerce features (addresses, payment methods, wishlist)
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3002/api/v1
+    description: Local development server
+  - url: https://api.example.com/api/v1
+    description: Production server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+
+  /ready:
+    get:
+      summary: Readiness check
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ready:
+                    type: boolean
+
+  /users/{userId}:
+    get:
+      summary: Get user profile
+      tags:
+        - User Profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '404':
+          description: User profile not found
+        '401':
+          description: Unauthorized
+
+    put:
+      summary: Update user profile
+      tags:
+        - User Profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserProfile'
+      responses:
+        '200':
+          description: Profile updated successfully
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /users/{userId}/addresses:
+    post:
+      summary: Create address
+      tags:
+        - Addresses
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAddress'
+      responses:
+        '201':
+          description: Address created successfully
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+    get:
+      summary: Get user addresses
+      tags:
+        - Addresses
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [shipping, billing, both]
+      responses:
+        '200':
+          description: Addresses retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Address'
+
+  /users/{userId}/payment-methods:
+    post:
+      summary: Add payment method
+      tags:
+        - Payment Methods
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentMethod'
+      responses:
+        '201':
+          description: Payment method added successfully
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+    get:
+      summary: Get user payment methods
+      tags:
+        - Payment Methods
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment methods retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentMethod'
+
+  /users/{userId}/wishlist:
+    post:
+      summary: Add item to wishlist
+      tags:
+        - Wishlist
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWishlistItem'
+      responses:
+        '201':
+          description: Item added to wishlist
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+    get:
+      summary: Get user wishlist
+      tags:
+        - Wishlist
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Wishlist retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WishlistItem'
+
+  /users/{userId}/wishlist/{itemId}:
+    delete:
+      summary: Remove item from wishlist
+      tags:
+        - Wishlist
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item removed from wishlist
+        '401':
+          description: Unauthorized
+        '404':
+          description: Item not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        avatarUrl:
+          type: string
+        preferredCurrency:
+          type: string
+        preferredLanguage:
+          type: string
+        newsletterSubscribed:
+          type: boolean
+        marketingOptIn:
+          type: boolean
+        isActive:
+          type: boolean
+        emailVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateUserProfile:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        avatarUrl:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date-time
+        gender:
+          type: string
+          enum: [male, female, other, prefer-not-to-say]
+        preferredCurrency:
+          type: string
+        preferredLanguage:
+          type: string
+        newsletterSubscribed:
+          type: boolean
+        marketingOptIn:
+          type: boolean
+
+    Address:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        type:
+          type: string
+          enum: [shipping, billing, both]
+        isDefault:
+          type: boolean
+        firstName:
+          type: string
+        lastName:
+          type: string
+        company:
+          type: string
+        addressLine1:
+          type: string
+        addressLine2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        phone:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateAddress:
+      type: object
+      required:
+        - type
+        - firstName
+        - lastName
+        - addressLine1
+        - city
+        - postalCode
+        - country
+      properties:
+        type:
+          type: string
+          enum: [shipping, billing, both]
+        isDefault:
+          type: boolean
+        firstName:
+          type: string
+        lastName:
+          type: string
+        company:
+          type: string
+        addressLine1:
+          type: string
+        addressLine2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        phone:
+          type: string
+
+    PaymentMethod:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        type:
+          type: string
+          enum: [credit_card, debit_card, paypal, bank_account]
+        isDefault:
+          type: boolean
+        cardType:
+          type: string
+        last4:
+          type: string
+        expiryMonth:
+          type: string
+        expiryYear:
+          type: string
+        cardholderName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreatePaymentMethod:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [credit_card, debit_card, paypal, bank_account]
+        isDefault:
+          type: boolean
+        cardType:
+          type: string
+        last4:
+          type: string
+        expiryMonth:
+          type: string
+        expiryYear:
+          type: string
+        cardholderName:
+          type: string
+        billingAddressId:
+          type: string
+
+    WishlistItem:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        productId:
+          type: string
+        productName:
+          type: string
+        productImageUrl:
+          type: string
+        productPrice:
+          type: string
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateWishlistItem:
+      type: object
+      required:
+        - productId
+      properties:
+        productId:
+          type: string
+        productName:
+          type: string
+        productImageUrl:
+          type: string
+        productPrice:
+          type: string
+        notes:
+          type: string

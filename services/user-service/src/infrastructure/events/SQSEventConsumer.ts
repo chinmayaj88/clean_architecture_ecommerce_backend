@@ -1,0 +1,153 @@
+import { SQS } from 'aws-sdk';
+import { IEventConsumer } from '../../ports/interfaces/IEventConsumer';
+import { getEnvConfig } from '../../config/env';
+import { getEnvironmentConfig } from '../../config/environment';
+import { createLogger } from '../logging/logger';
+
+const logger = createLogger();
+
+type EventHandler = (event: Record<string, unknown>) => Promise<void>;
+
+export class SQSEventConsumer implements IEventConsumer {
+  private sqs: SQS;
+  private config = getEnvConfig();
+  private envConfig = getEnvironmentConfig();
+  private isLocalStack: boolean;
+  private isStaging: boolean;
+  private handlers: Map<string, EventHandler[]> = new Map();
+  private isRunning: boolean = false;
+  private pollingInterval: NodeJS.Timeout | null = null;
+
+  constructor() {
+    const localstackEndpoint = process.env.LOCALSTACK_ENDPOINT;
+    this.isLocalStack = !!localstackEndpoint;
+    this.isStaging = this.envConfig.isStaging();
+
+    const sqsConfig: SQS.Types.ClientConfiguration = {
+      region: this.config.AWS_REGION,
+    };
+
+    if (this.isLocalStack) {
+      sqsConfig.endpoint = localstackEndpoint;
+      sqsConfig.accessKeyId = process.env.AWS_ACCESS_KEY_ID || 'localstack';
+      sqsConfig.secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || 'localstack';
+      logger.info('Using LocalStack for SQS (development)', { endpoint: localstackEndpoint });
+    } else if (this.isStaging) {
+      logger.info('Using minimal AWS SQS (staging)', { region: this.config.AWS_REGION });
+    } else {
+      logger.info('Using full AWS SQS (production)', { region: this.config.AWS_REGION });
+    }
+
+    this.sqs = new SQS(sqsConfig);
+  }
+
+  subscribe(topic: string, handler: EventHandler): void {
+    if (!this.handlers.has(topic)) {
+      this.handlers.set(topic, []);
+    }
+    this.handlers.get(topic)!.push(handler);
+    logger.info('Subscribed to event topic', { topic });
+  }
+
+  async start(): Promise<void> {
+    if (this.isRunning) {
+      logger.warn('Event consumer is already running');
+      return;
+    }
+
+    if (!this.config.SQS_QUEUE_URL) {
+      logger.warn('SQS_QUEUE_URL not configured, event consumer not started');
+      return;
+    }
+
+    this.isRunning = true;
+    logger.info('Starting SQS event consumer', { queueUrl: this.config.SQS_QUEUE_URL });
+
+    // Start polling for messages
+    this.pollMessages();
+  }
+
+  async stop(): Promise<void> {
+    this.isRunning = false;
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+    }
+    logger.info('SQS event consumer stopped');
+  }
+
+  private async pollMessages(): Promise<void> {
+    if (!this.isRunning || !this.config.SQS_QUEUE_URL) {
+      return;
+    }
+
+    try {
+      const result = await this.sqs.receiveMessage({
+        QueueUrl: this.config.SQS_QUEUE_URL,
+        MaxNumberOfMessages: 10,
+        WaitTimeSeconds: 20, // Long polling
+        VisibilityTimeout: 60,
+      }).promise();
+
+      if (result.Messages && result.Messages.length > 0) {
+        for (const message of result.Messages) {
+          await this.processMessage(message);
+        }
+      }
+
+      // Continue polling
+      this.pollMessages();
+    } catch (error) {
+      logger.error('Error polling SQS messages', { error });
+      // Retry after delay
+      setTimeout(() => this.pollMessages(), 5000);
+    }
+  }
+
+  private async processMessage(message: SQS.Message): Promise<void> {
+    if (!message.Body || !message.ReceiptHandle) {
+      return;
+    }
+
+    try {
+      const snsMessage = JSON.parse(message.Body);
+      
+      // Extract event from SNS message
+      let eventData: Record<string, unknown>;
+      if (snsMessage.Type === 'Notification') {
+        // Message from SNS
+        eventData = JSON.parse(snsMessage.Message);
+        const eventType = snsMessage.Subject || snsMessage.MessageAttributes?.eventType?.Value;
+        
+        if (eventType && this.handlers.has(eventType)) {
+          const handlers = this.handlers.get(eventType)!;
+          for (const handler of handlers) {
+            await handler(eventData);
+          }
+        }
+      } else {
+        // Direct event
+        eventData = snsMessage;
+      }
+
+      // Delete message from queue after processing
+      if (this.config.SQS_QUEUE_URL && message.ReceiptHandle) {
+        await this.sqs.deleteMessage({
+          QueueUrl: this.config.SQS_QUEUE_URL,
+          ReceiptHandle: message.ReceiptHandle,
+        }).promise();
+      }
+
+      logger.info('Event processed successfully', { messageId: message.MessageId });
+    } catch (error) {
+      logger.error('Error processing message', { 
+        messageId: message.MessageId, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+      
+      // In production, you might want to send to dead letter queue
+      // For now, we'll just log the error
+    }
+  }
+}
+
