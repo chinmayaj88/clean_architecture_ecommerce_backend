@@ -5,7 +5,7 @@
 **Database Name**: `shipping_db`  
 **Service**: Shipping Service  
 **Purpose**: Shipping rate calculation, carrier integration, shipping zones, tracking  
-**Technology**: PostgreSQL 15+  
+**Technology**: PostgreSQL 16+  
 **ORM**: Prisma
 
 ---

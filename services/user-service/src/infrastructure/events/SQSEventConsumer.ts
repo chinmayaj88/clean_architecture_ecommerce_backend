@@ -1,4 +1,4 @@
-import { SQS } from 'aws-sdk';
+import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand, Message } from '@aws-sdk/client-sqs';
 import { IEventConsumer } from '../../ports/interfaces/IEventConsumer';
 import { getEnvConfig } from '../../config/env';
 import { getEnvironmentConfig } from '../../config/environment';
@@ -9,7 +9,7 @@ const logger = createLogger();
 type EventHandler = (event: Record<string, unknown>) => Promise<void>;
 
 export class SQSEventConsumer implements IEventConsumer {
-  private sqs: SQS;
+  private sqsClient: SQSClient;
   private config = getEnvConfig();
   private envConfig = getEnvironmentConfig();
   private isLocalStack: boolean;
@@ -23,14 +23,16 @@ export class SQSEventConsumer implements IEventConsumer {
     this.isLocalStack = !!localstackEndpoint;
     this.isStaging = this.envConfig.isStaging();
 
-    const sqsConfig: SQS.Types.ClientConfiguration = {
+    const clientConfig: any = {
       region: this.config.AWS_REGION,
     };
 
     if (this.isLocalStack) {
-      sqsConfig.endpoint = localstackEndpoint;
-      sqsConfig.accessKeyId = process.env.AWS_ACCESS_KEY_ID || 'localstack';
-      sqsConfig.secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || 'localstack';
+      clientConfig.endpoint = localstackEndpoint;
+      clientConfig.credentials = {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'localstack',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'localstack',
+      };
       logger.info('Using LocalStack for SQS (development)', { endpoint: localstackEndpoint });
     } else if (this.isStaging) {
       logger.info('Using minimal AWS SQS (staging)', { region: this.config.AWS_REGION });
@@ -38,7 +40,7 @@ export class SQSEventConsumer implements IEventConsumer {
       logger.info('Using full AWS SQS (production)', { region: this.config.AWS_REGION });
     }
 
-    this.sqs = new SQS(sqsConfig);
+    this.sqsClient = new SQSClient(clientConfig);
   }
 
   subscribe(topic: string, handler: EventHandler): void {
@@ -82,12 +84,14 @@ export class SQSEventConsumer implements IEventConsumer {
     }
 
     try {
-      const result = await this.sqs.receiveMessage({
+      const command = new ReceiveMessageCommand({
         QueueUrl: this.config.SQS_QUEUE_URL,
         MaxNumberOfMessages: 10,
         WaitTimeSeconds: 20, // Long polling
         VisibilityTimeout: 60,
-      }).promise();
+      });
+
+      const result = await this.sqsClient.send(command);
 
       if (result.Messages && result.Messages.length > 0) {
         for (const message of result.Messages) {
@@ -104,7 +108,7 @@ export class SQSEventConsumer implements IEventConsumer {
     }
   }
 
-  private async processMessage(message: SQS.Message): Promise<void> {
+  private async processMessage(message: Message): Promise<void> {
     if (!message.Body || !message.ReceiptHandle) {
       return;
     }
@@ -132,10 +136,11 @@ export class SQSEventConsumer implements IEventConsumer {
 
       // Delete message from queue after processing
       if (this.config.SQS_QUEUE_URL && message.ReceiptHandle) {
-        await this.sqs.deleteMessage({
+        const deleteCommand = new DeleteMessageCommand({
           QueueUrl: this.config.SQS_QUEUE_URL,
           ReceiptHandle: message.ReceiptHandle,
-        }).promise();
+        });
+        await this.sqsClient.send(deleteCommand);
       }
 
       logger.info('Event processed successfully', { messageId: message.MessageId });
@@ -150,4 +155,3 @@ export class SQSEventConsumer implements IEventConsumer {
     }
   }
 }
-

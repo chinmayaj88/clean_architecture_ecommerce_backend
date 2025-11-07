@@ -5,7 +5,7 @@
 **Database Name**: `discount_db`  
 **Service**: Discount/Promotion Service  
 **Purpose**: Coupon codes, promotional campaigns, discount rules, usage tracking  
-**Technology**: PostgreSQL 15+  
+**Technology**: PostgreSQL 16+  
 **ORM**: Prisma
 
 ---

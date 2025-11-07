@@ -5,7 +5,7 @@
 **Database Name**: `payment_db`  
 **Service**: Payment Service  
 **Purpose**: Payment processing, transactions, refunds, payment methods  
-**Technology**: PostgreSQL 15+  
+**Technology**: PostgreSQL 16+  
 **ORM**: Prisma
 
 ---

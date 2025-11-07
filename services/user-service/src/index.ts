@@ -21,7 +21,18 @@ const config = getEnvConfig();
 
 const app = express();
 
-app.use(helmet());
+// Helmet v8 requires explicit configuration
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
 
 const corsOptions: cors.CorsOptions = {
   credentials: true,

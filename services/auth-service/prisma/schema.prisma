@@ -25,16 +25,25 @@ model User {
   failedLoginAttempts Int      @default(0)
   lockedUntil         DateTime?
   
+  // MFA fields
+  mfaEnabled          Boolean  @default(false)
+  mfaSecret           String?  // TOTP secret (encrypted)
+  mfaBackupCodes      String[] // Backup codes (encrypted)
+  
   // Relations
   refreshTokens        RefreshToken[]
   roles               UserRole[]
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
   securityAuditLogs   SecurityAuditLog[]
+  devices             Device[]
+  loginHistory        LoginHistory[]
+  sessions            UserSession[]
 
   @@index([email])
   @@index([isActive])
   @@index([lockedUntil])
+  @@index([mfaEnabled])
   @@map("users")
 }
 
@@ -78,10 +87,20 @@ model RefreshToken {
   revoked   Boolean  @default(false)
   revokedAt DateTime?
   createdAt DateTime @default(now())
+  
+  // Device tracking
+  deviceId   String?
+  device     Device?  @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  ipAddress  String?
+  userAgent  String?
+  
+  // Session relation
+  sessions   UserSession[]
 
   @@index([token])
   @@index([userId])
   @@index([expiresAt])
+  @@index([deviceId])
   @@map("refresh_tokens")
 }
 
@@ -147,5 +166,129 @@ model SecurityAuditLog {
   @@index([action])
   @@index([createdAt])
   @@map("security_audit_logs")
+}
+
+// Device tracking - Track user devices for security
+model Device {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Device identification
+  deviceId      String   @unique // Unique device fingerprint
+  deviceName    String?  // User-friendly name (e.g., "iPhone 14 Pro")
+  deviceType    String   // 'mobile', 'tablet', 'desktop', 'unknown'
+  os            String?  // Operating system
+  browser       String?  // Browser name
+  userAgent     String?  // Full user agent string
+  
+  // Location tracking
+  ipAddress     String?
+  country       String?
+  city          String?
+  isTrusted     Boolean  @default(false) // User marked as trusted device
+  
+  // Activity tracking
+  lastUsedAt    DateTime @default(now())
+  firstSeenAt   DateTime @default(now())
+  isActive      Boolean  @default(true)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  refreshTokens RefreshToken[]
+  loginHistory  LoginHistory[]
+  sessions      UserSession[]
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([userId, isActive])
+  @@index([lastUsedAt])
+  @@map("devices")
+}
+
+// Login History - Detailed login tracking
+model LoginHistory {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Login details
+  ipAddress     String?
+  userAgent     String?
+  deviceId      String?  // Reference to Device
+  device        Device?  @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  
+  // Location
+  country       String?
+  city          String?
+  isp           String?  // Internet Service Provider
+  
+  // Status
+  status        String   // 'success', 'failed', 'blocked'
+  failureReason String?  // Reason for failure if status is 'failed'
+  
+  // Security flags
+  isSuspicious  Boolean  @default(false) // Detected as suspicious
+  suspiciousReason String? // Why it's suspicious
+  
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([isSuspicious])
+  @@map("login_history")
+}
+
+// User Session - Active session management
+model UserSession {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Session identification
+  sessionToken   String   @unique // JWT access token ID or session ID
+  refreshTokenId String?  // Reference to RefreshToken
+  refreshToken   RefreshToken? @relation(fields: [refreshTokenId], references: [id], onDelete: Cascade)
+  
+  // Device & location
+  deviceId      String?
+  device        Device?  @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  ipAddress     String?
+  userAgent     String?
+  country       String?
+  city          String?
+  
+  // Session metadata
+  isActive      Boolean  @default(true)
+  lastActivityAt DateTime @default(now())
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  revokedAt     DateTime?
+
+  @@index([userId])
+  @@index([sessionToken])
+  @@index([userId, isActive])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+// MFA Backup Codes
+model MFABackupCode {
+  id            String @id @default(cuid())
+  userId        String
+  code          String // Hashed backup code
+  used          Boolean @default(false)
+  usedAt        DateTime?
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime
+
+  @@index([userId])
+  @@index([code])
+  @@index([expiresAt])
+  @@map("mfa_backup_codes")
 }
 

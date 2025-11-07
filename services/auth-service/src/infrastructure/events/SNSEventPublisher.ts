@@ -1,5 +1,4 @@
-
-import { SNS } from 'aws-sdk';
+import { SNSClient, PublishCommand, CreateTopicCommand } from '@aws-sdk/client-sns';
 import { IEventPublisher } from '../../ports/interfaces/IEventPublisher';
 import { getEnvConfig } from '../../config/env';
 import { getEnvironmentConfig } from '../../config/environment';
@@ -8,7 +7,7 @@ import { createLogger } from '../logging/logger';
 const logger = createLogger();
 
 export class SNSEventPublisher implements IEventPublisher {
-  private sns: SNS;
+  private snsClient: SNSClient;
   private config = getEnvConfig();
   private envConfig = getEnvironmentConfig();
   private isLocalStack: boolean;
@@ -19,12 +18,16 @@ export class SNSEventPublisher implements IEventPublisher {
     this.isLocalStack = !!localstackEndpoint;
     this.isStaging = this.envConfig.isStaging();
 
-    const snsConfig: SNS.Types.ClientConfiguration = {
+    const clientConfig: any = {
       region: this.config.AWS_REGION,
     };
 
     if (this.isLocalStack) {
-      snsConfig.endpoint = localstackEndpoint;
+      clientConfig.endpoint = localstackEndpoint;
+      clientConfig.credentials = {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'localstack',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'localstack',
+      };
       logger.info('Using LocalStack for SNS (development)', {
         endpoint: localstackEndpoint,
       });
@@ -38,7 +41,7 @@ export class SNSEventPublisher implements IEventPublisher {
       });
     }
 
-    this.sns = new SNS(snsConfig);
+    this.snsClient = new SNSClient(clientConfig);
   }
 
   async publish(topic: string, event: Record<string, unknown>): Promise<void> {
@@ -49,22 +52,22 @@ export class SNSEventPublisher implements IEventPublisher {
 
       const topicArn = `arn:aws:sns:${this.config.AWS_REGION}:${accountId}:${topic}`;
 
-      await this.sns
-        .publish({
-          TopicArn: topicArn,
-          Message: JSON.stringify(event),
-          MessageAttributes: {
-            eventType: {
-              DataType: 'String',
-              StringValue: topic,
-            },
-            source: {
-              DataType: 'String',
-              StringValue: (event.source as string) || 'auth-service',
-            },
+      const command = new PublishCommand({
+        TopicArn: topicArn,
+        Message: JSON.stringify(event),
+        MessageAttributes: {
+          eventType: {
+            DataType: 'String',
+            StringValue: topic,
           },
-        })
-        .promise();
+          source: {
+            DataType: 'String',
+            StringValue: (event.source as string) || 'auth-service',
+          },
+        },
+      });
+
+      await this.snsClient.send(command);
 
       logger.info('Event published successfully', {
         topic,
@@ -73,7 +76,7 @@ export class SNSEventPublisher implements IEventPublisher {
       });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorCode = (error as any)?.code;
+      const errorCode = (error as any)?.name || (error as any)?.code;
       
       if (
         this.isLocalStack &&
@@ -84,25 +87,26 @@ export class SNSEventPublisher implements IEventPublisher {
       ) {
         logger.info('Topic does not exist, creating it', { topic });
         try {
-          const createResult = await this.sns.createTopic({ Name: topic }).promise();
+          const createCommand = new CreateTopicCommand({ Name: topic });
+          const createResult = await this.snsClient.send(createCommand);
 
           if (createResult.TopicArn) {
-            await this.sns
-              .publish({
-                TopicArn: createResult.TopicArn,
-                Message: JSON.stringify(event),
-                MessageAttributes: {
-                  eventType: {
-                    DataType: 'String',
-                    StringValue: topic,
-                  },
-                  source: {
-                    DataType: 'String',
-                    StringValue: (event.source as string) || 'auth-service',
-                  },
+            const publishCommand = new PublishCommand({
+              TopicArn: createResult.TopicArn,
+              Message: JSON.stringify(event),
+              MessageAttributes: {
+                eventType: {
+                  DataType: 'String',
+                  StringValue: topic,
                 },
-              })
-              .promise();
+                source: {
+                  DataType: 'String',
+                  StringValue: (event.source as string) || 'auth-service',
+                },
+              },
+            });
+
+            await this.snsClient.send(publishCommand);
 
             logger.info('Topic created and event published', {
               topic,
@@ -126,4 +130,3 @@ export class SNSEventPublisher implements IEventPublisher {
     }
   }
 }
-

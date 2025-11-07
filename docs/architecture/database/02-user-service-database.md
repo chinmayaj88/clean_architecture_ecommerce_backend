@@ -5,7 +5,7 @@
 **Database Name**: `user_db`  
 **Service**: User Service  
 **Purpose**: User profile management, addresses, payment methods, preferences, and wishlist  
-**Technology**: PostgreSQL 15+  
+**Technology**: PostgreSQL 16+  
 **ORM**: Prisma
 
 ---
@@ -352,6 +352,153 @@ erDiagram
 
 ---
 
+### 6. `recently_viewed_products` Table
+
+**Purpose**: Track recently viewed products per user
+
+**Columns**:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR(25) | PRIMARY KEY, DEFAULT cuid() | Unique view identifier |
+| `user_id` | VARCHAR(25) | FOREIGN KEY → user_profiles.userId, INDEXED | User identifier |
+| `product_id` | VARCHAR(25) | NOT NULL, INDEXED | References product-service `products.id` |
+| `product_name` | VARCHAR(255) | NULLABLE | Denormalized product name |
+| `product_image_url` | VARCHAR(500) | NULLABLE | Denormalized product image URL |
+| `product_price` | DECIMAL(10,2) | NULLABLE | Denormalized product price |
+| `viewed_at` | TIMESTAMP | DEFAULT now(), INDEXED | View timestamp |
+
+**Indexes**:
+- Primary Key: `id`
+- Unique Constraint: `(user_id, product_id)` (one record per user/product)
+- Index: `user_id` (for user view queries)
+- Index: `product_id` (for product view queries)
+- Composite Index: `(user_id, viewed_at)` (for ordered queries)
+
+**Foreign Keys**:
+- `user_id` → `user_profiles.userId` (CASCADE DELETE)
+
+**Business Rules**:
+- One record per user per product (updated on re-view)
+- Auto-cleanup old views (e.g., older than 90 days)
+- Denormalized product data for quick display
+
+---
+
+### 7. `user_activities` Table
+
+**Purpose**: Track all user actions for analytics and behavior tracking
+
+**Columns**:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR(25) | PRIMARY KEY, DEFAULT cuid() | Unique activity identifier |
+| `user_id` | VARCHAR(25) | FOREIGN KEY → user_profiles.userId, INDEXED | User identifier |
+| `activity_type` | VARCHAR(100) | NOT NULL, INDEXED | Activity type (product_viewed, product_searched, wishlist_added, etc.) |
+| `entity_type` | VARCHAR(50) | NULLABLE, INDEXED | Entity type (product, order, address, etc.) |
+| `entity_id` | VARCHAR(25) | NULLABLE | Entity identifier |
+| `metadata` | JSONB | NULLABLE | Additional activity data |
+| `ip_address` | VARCHAR(45) | NULLABLE | IP address |
+| `user_agent` | TEXT | NULLABLE | User agent string |
+| `created_at` | TIMESTAMP | DEFAULT now(), INDEXED | Activity timestamp |
+
+**Indexes**:
+- Primary Key: `id`
+- Index: `user_id` (for user activity queries)
+- Index: `activity_type` (for activity type filtering)
+- Index: `entity_type` (for entity type filtering)
+- Index: `created_at` (for time-based queries)
+- Composite Index: `(user_id, created_at)` (for user activity timeline)
+
+**Foreign Keys**:
+- `user_id` → `user_profiles.userId` (CASCADE DELETE)
+
+**Activity Types**:
+- `product_viewed` - Product viewed
+- `product_searched` - Product searched
+- `wishlist_added` - Added to wishlist
+- `wishlist_removed` - Removed from wishlist
+- `address_added` - Address added
+- `address_updated` - Address updated
+- `payment_method_added` - Payment method added
+- `profile_updated` - Profile updated
+
+**Business Rules**:
+- Track all significant user actions
+- Metadata stored as JSON for flexibility
+- Used for analytics and recommendations
+
+---
+
+### 8. `notification_preferences` Table
+
+**Purpose**: Granular notification preferences per channel and category
+
+**Columns**:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR(25) | PRIMARY KEY, DEFAULT cuid() | Unique preference identifier |
+| `user_id` | VARCHAR(25) | FOREIGN KEY → user_profiles.userId, INDEXED | User identifier |
+| `channel` | VARCHAR(20) | NOT NULL, INDEXED | Notification channel (email, sms, push) |
+| `category` | VARCHAR(50) | NOT NULL | Category (orders, promotions, reviews, security, wishlist, stock_alerts, newsletter) |
+| `enabled` | BOOLEAN | DEFAULT true | Enabled status |
+| `frequency` | VARCHAR(20) | NULLABLE | Frequency (realtime, daily, weekly, never) |
+| `created_at` | TIMESTAMP | DEFAULT now() | Creation timestamp |
+| `updated_at` | TIMESTAMP | DEFAULT now(), ON UPDATE now() | Last update timestamp |
+
+**Indexes**:
+- Primary Key: `id`
+- Unique Constraint: `(user_id, channel, category)` (one preference per user/channel/category)
+- Index: `user_id` (for user preference queries)
+- Index: `channel` (for channel-based queries)
+
+**Foreign Keys**:
+- `user_id` → `user_profiles.userId` (CASCADE DELETE)
+
+**Channels**:
+- `email` - Email notifications
+- `sms` - SMS notifications
+- `push` - Push notifications
+
+**Categories**:
+- `orders` - Order-related notifications
+- `promotions` - Promotional notifications
+- `reviews` - Review-related notifications
+- `security` - Security notifications
+- `wishlist` - Wishlist notifications
+- `stock_alerts` - Stock alert notifications
+- `newsletter` - Newsletter subscriptions
+
+**Frequencies**:
+- `realtime` - Send immediately
+- `daily` - Daily digest
+- `weekly` - Weekly digest
+- `never` - Never send
+
+**Business Rules**:
+- Default to enabled if not set
+- One preference per user/channel/category combination
+- Used for notification routing
+
+**Note**: The `user_profiles` table also includes:
+- `profile_completion_score` (INTEGER, 0-100) - Automatic profile completion calculation
+
+---
+
+## Enhanced Features Summary
+
+The User Service database now includes:
+
+1. **Recently Viewed Products** - Track product views with timestamps
+2. **User Activity Tracking** - Comprehensive activity tracking for analytics
+3. **Profile Completion Score** - Automatic calculation (0-100)
+4. **Granular Notification Preferences** - Per-channel and per-category preferences
+5. **GDPR Compliance** - Data export and deletion capabilities
+
+---
+
 ## Indexing Strategy
 
 ### Primary Indexes
@@ -517,6 +664,9 @@ async handleUserCreatedEvent(event: UserCreatedEvent) {
 - **Payment Methods**: 2,000,000 (average 2 per user)
 - **Wishlist Items**: 5,000,000
 - **User Preferences**: 10,000,000
+- **Recently Viewed Products**: 10,000,000 (rolling 90 days)
+- **User Activities**: 50,000,000 (1 year retention)
+- **Notification Preferences**: 5,000,000 (average 5 per user)
 
 ### Growth Projections
 
@@ -524,12 +674,15 @@ async handleUserCreatedEvent(event: UserCreatedEvent) {
 - **New Addresses**: 30,000/month
 - **New Payment Methods**: 20,000/month
 - **New Wishlist Items**: 50,000/month
+- **New Recently Viewed**: 500,000/month
+- **New Activities**: 2,000,000/month
+- **New Notification Preferences**: 50,000/month
 
 ### Storage Estimates
 
-- **Database Size**: ~100 GB
-- **Monthly Growth**: ~10 GB
-- **Index Size**: ~20 GB
+- **Database Size**: ~150 GB
+- **Monthly Growth**: ~15 GB
+- **Index Size**: ~30 GB
 
 ---
 

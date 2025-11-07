@@ -238,6 +238,155 @@ export function createUserRoutes(controller: UserController): Router {
     }
   );
 
+  // Recently Viewed Products Routes
+  router.post(
+    '/users/:userId/recently-viewed',
+    [
+      param('userId').isString().notEmpty(),
+      body('productId').isString().notEmpty(),
+      body('productName').optional().isString(),
+      body('productImageUrl').optional().isURL(),
+      body('productPrice').optional().isFloat({ min: 0 }),
+      validate,
+    ],
+    strictRateLimiter,
+    requireOwnershipOrRole('admin'),
+    (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+      controller.trackProductView(req, res).catch(next);
+    }
+  );
+
+  router.get(
+    '/users/:userId/recently-viewed',
+    [
+      param('userId').isString().notEmpty(),
+      query('limit').optional().isInt({ min: 1, max: 100 }),
+      validate,
+    ],
+    requireOwnershipOrRole('admin'),
+    (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+      controller.getRecentlyViewedProducts(req, res).catch(next);
+    }
+  );
+
+  // User Activity Routes
+  router.post(
+    '/users/:userId/activity',
+    [
+      param('userId').isString().notEmpty(),
+      body('activityType').isString().notEmpty(),
+      body('entityType').optional().isString(),
+      body('entityId').optional().isString(),
+      body('metadata').optional().isObject(),
+      validate,
+    ],
+    strictRateLimiter,
+    requireOwnershipOrRole('admin'),
+    (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+      controller.trackActivity(req, res).catch(next);
+    }
+  );
+
+  router.get(
+    '/users/:userId/activity',
+    [
+      param('userId').isString().notEmpty(),
+      query('limit').optional().isInt({ min: 1, max: 100 }),
+      query('offset').optional().isInt({ min: 0 }),
+      query('activityType').optional().isString(),
+      query('entityType').optional().isString(),
+      validate,
+    ],
+    requireOwnershipOrRole('admin'),
+    (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+      controller.getActivity(req, res).catch(next);
+    }
+  );
+
+  router.get(
+    '/users/:userId/activity/stats',
+    [
+      param('userId').isString().notEmpty(),
+      query('days').optional().isInt({ min: 1, max: 365 }),
+      validate,
+    ],
+    requireOwnershipOrRole('admin'),
+    (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+      controller.getActivityStats(req, res).catch(next);
+    }
+  );
+
+  // Profile Completion Score Routes
+  router.post(
+    '/users/:userId/profile/completion-score',
+    [
+      param('userId').isString().notEmpty(),
+      validate,
+    ],
+    requireOwnershipOrRole('admin'),
+    (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+      controller.calculateProfileCompletionScore(req, res).catch(next);
+    }
+  );
+
+  // Notification Preferences Routes
+  router.get(
+    '/users/:userId/notification-preferences',
+    [
+      param('userId').isString().notEmpty(),
+      query('channel').optional().isString(),
+      validate,
+    ],
+    requireOwnershipOrRole('admin'),
+    (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+      controller.getNotificationPreferences(req, res).catch(next);
+    }
+  );
+
+  router.put(
+    '/users/:userId/notification-preferences',
+    [
+      param('userId').isString().notEmpty(),
+      body('channel').isString().notEmpty(),
+      body('category').isString().notEmpty(),
+      body('enabled').optional().isBoolean(),
+      body('frequency').optional().isIn(['realtime', 'daily', 'weekly', 'never']),
+      validate,
+    ],
+    strictRateLimiter,
+    requireOwnershipOrRole('admin'),
+    (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+      controller.updateNotificationPreference(req, res).catch(next);
+    }
+  );
+
+  // GDPR Compliance Routes
+  router.get(
+    '/users/:userId/data/export',
+    [
+      param('userId').isString().notEmpty(),
+      validate,
+    ],
+    requireOwnershipOrRole('admin'),
+    (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+      controller.exportUserData(req, res).catch(next);
+    }
+  );
+
+  router.delete(
+    '/users/:userId/data',
+    [
+      param('userId').isString().notEmpty(),
+      body('confirm').equals('DELETE').withMessage('Confirmation required'),
+      validate,
+    ],
+    strictRateLimiter,
+    requireOwnershipOrRole('admin'),
+    (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+      controller.deleteUserData(req, res).catch(next);
+    }
+  );
+
   // Admin-only routes
   router.get(
     '/admin/users',

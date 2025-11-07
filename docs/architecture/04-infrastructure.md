@@ -113,7 +113,7 @@ The codebase automatically configures these based on `NODE_ENV`. See [Environmen
 **Purpose**: Distributed caching and rate limiting
 
 **Port**: `6379`  
-**Image**: `redis:7-alpine`
+**Image**: `redis:7.4-alpine`
 
 ### Use Cases
 

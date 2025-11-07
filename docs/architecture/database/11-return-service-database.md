@@ -5,7 +5,7 @@
 **Database Name**: `return_db`  
 **Service**: Return/Refund Service  
 **Purpose**: Return requests, return authorization (RMA), return tracking, refund coordination  
-**Technology**: PostgreSQL 15+  
+**Technology**: PostgreSQL 16+  
 **ORM**: Prisma
 
 ---

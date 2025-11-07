@@ -109,7 +109,7 @@ export class PrismaUserProfileRepository implements IUserProfileRepository {
     return entity;
   }
 
-  async update(userId: string, data: UpdateUserProfileData): Promise<UserProfile> {
+  async update(userId: string, data: UpdateUserProfileData & { profileCompletionScore?: number }): Promise<UserProfile> {
     const profile = await this.prisma.userProfile.update({
       where: { userId },
       data: {
@@ -123,6 +123,7 @@ export class PrismaUserProfileRepository implements IUserProfileRepository {
         preferredLanguage: data.preferredLanguage,
         newsletterSubscribed: data.newsletterSubscribed,
         marketingOptIn: data.marketingOptIn,
+        ...(data.profileCompletionScore !== undefined && { profileCompletionScore: data.profileCompletionScore }),
       },
     });
 
@@ -178,6 +179,7 @@ export class PrismaUserProfileRepository implements IUserProfileRepository {
     createdAt: Date;
     updatedAt: Date;
     lastLoginAt: Date | null;
+    profileCompletionScore: number;
   }): UserProfile {
     return {
       id: profile.id,
@@ -198,6 +200,7 @@ export class PrismaUserProfileRepository implements IUserProfileRepository {
       createdAt: profile.createdAt,
       updatedAt: profile.updatedAt,
       lastLoginAt: profile.lastLoginAt ?? undefined,
+      profileCompletionScore: profile.profileCompletionScore,
     };
   }
 }

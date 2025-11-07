@@ -17,8 +17,9 @@ Welcome to the Architecture Documentation for the E-Commerce Microservices Platf
    - Code structure and organization
 
 3. **[Services](./03-services.md)**
-   - Auth Service architecture
-   - User Service architecture
+   - Auth Service architecture (with MFA, Device Management, Login History, Session Management, Suspicious Login Detection)
+   - User Service architecture (with Recently Viewed Products, Activity Tracking, Profile Completion, Notification Preferences, GDPR Compliance)
+   - Product Service architecture (with Advanced Search, Recommendations, Q&A, Review Moderation, Stock Alerts, Comparisons, Badges)
    - Service responsibilities and APIs
 
 4. **[Infrastructure](./04-infrastructure.md)**
@@ -36,6 +37,10 @@ Welcome to the Architecture Documentation for the E-Commerce Microservices Platf
 6. **[Security](./06-security.md)**
    - Authentication (JWT)
    - Authorization (RBAC)
+   - Multi-Factor Authentication (MFA/TOTP)
+   - Device Management
+   - Login History & Suspicious Login Detection
+   - Session Management
    - Account security (lockout)
    - API security (CORS, rate limiting)
    - Security audit logging
@@ -140,6 +145,16 @@ All documents follow this structure:
 
 ---
 
-**Last Updated**: 2024  
-**Architecture Version**: 1.0
+**Last Updated**: 2025  
+**Architecture Version**: 2.2 (Real-World Features Implementation)
+
+## 🎉 New Features
+
+All three implemented services now include comprehensive real-world features:
+
+- **Auth Service**: MFA/TOTP, Device Management, Login History, Session Management, Suspicious Login Detection
+- **User Service**: Recently Viewed Products, Activity Tracking, Profile Completion, Notification Preferences, GDPR Compliance
+- **Product Service**: Advanced Search, Recommendations, Q&A, Review Moderation, Stock Alerts, Comparisons, Badges
+
+See [FEATURES_SUMMARY.md](../../FEATURES_SUMMARY.md) for complete feature documentation.
 

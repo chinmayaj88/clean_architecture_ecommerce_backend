@@ -1,0 +1,328 @@
+// Prisma schema for product-service
+// This service manages product catalog, categories, inventory, variants, reviews
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id                String   @id @default(cuid())
+  sku               String   @unique
+  name              String
+  slug              String   @unique
+  description       String?  @db.Text
+  shortDescription  String?  @db.Text
+  price             Decimal  @db.Decimal(10, 2)
+  compareAtPrice    Decimal? @db.Decimal(10, 2)
+  costPrice         Decimal? @db.Decimal(10, 2)
+  status            String   @default("draft") // draft, active, archived
+  isVisible         Boolean  @default(true)
+  stockQuantity     Int      @default(0)
+  stockStatus       String   @default("out_of_stock") // in_stock, out_of_stock, backorder
+  weight            Decimal? @db.Decimal(10, 2)
+  length            Decimal? @db.Decimal(10, 2)
+  width             Decimal? @db.Decimal(10, 2)
+  height            Decimal? @db.Decimal(10, 2)
+  metaTitle         String?
+  metaDescription   String?  @db.Text
+  attributes        Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  publishedAt       DateTime?
+
+  // Product badges
+  badges            String[] // ['new', 'sale', 'featured', 'bestseller', 'limited_stock', 'pre_order']
+  
+  // Analytics
+  viewCount         Int      @default(0)
+  purchaseCount     Int      @default(0)
+  searchCount       Int      @default(0)
+  
+  // Relations
+  variants          ProductVariant[]
+  images            ProductImage[]
+  categories        ProductCategory[]
+  reviews           ProductReview[]
+  tags              ProductTag[]
+  inventory         ProductInventory?
+  questions         ProductQuestion[]
+  stockAlerts       StockAlert[]
+  recentlyViewed    RecentlyViewedProduct[]
+  comparisons       ProductComparison[]
+  priceHistory      PriceHistory[]
+  searchHistory     ProductSearchHistory[]
+
+  @@index([name])
+  @@index([price])
+  @@index([status])
+  @@index([isVisible])
+  @@fulltext([name, description, shortDescription])
+  @@map("products")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  parentId    String?
+  level       Int      @default(0)
+  sortOrder   Int      @default(0)
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  parent      Category?           @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[]          @relation("CategoryHierarchy")
+  products    ProductCategory[]
+
+  @@index([name])
+  @@index([parentId])
+  @@index([isActive])
+  @@map("categories")
+}
+
+model ProductCategory {
+  id         String   @id @default(cuid())
+  productId  String
+  categoryId String
+  createdAt  DateTime @default(now())
+
+  // Relations
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, categoryId])
+  @@index([productId])
+  @@index([categoryId])
+  @@map("product_categories")
+}
+
+model ProductVariant {
+  id             String   @id @default(cuid())
+  productId      String
+  sku            String   @unique
+  name           String?
+  price          Decimal? @db.Decimal(10, 2)
+  compareAtPrice Decimal? @db.Decimal(10, 2)
+  stockQuantity  Int      @default(0)
+  stockStatus    String   @default("out_of_stock")
+  attributes     Json?
+  imageUrl       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventory      ProductInventory?
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  url       String
+  altText   String?
+  sortOrder Int      @default(0)
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([productId, sortOrder])
+  @@map("product_images")
+}
+
+model ProductInventory {
+  id               String   @id @default(cuid())
+  productId        String   @unique
+  variantId        String?
+  quantity         Int      @default(0)
+  reservedQuantity Int      @default(0)
+  availableQuantity Int     @default(0) // Computed: quantity - reservedQuantity
+  location         String?
+  lastRestockedAt  DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  product          Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant          ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, variantId])
+  @@index([productId])
+  @@index([variantId])
+  @@map("product_inventory")
+}
+
+model ProductReview {
+  id                String   @id @default(cuid())
+  productId        String
+  userId            String   // References auth.users.id (no FK)
+  rating           Int      // 1-5
+  title            String?
+  comment          String?  @db.Text
+  isVerifiedPurchase Boolean @default(false)
+  isApproved       Boolean  @default(false)
+  helpfulCount     Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([userId])
+  @@index([rating])
+  @@index([isApproved])
+  @@index([createdAt])
+  @@index([productId, isApproved, rating])
+  @@map("product_reviews")
+}
+
+model ProductTag {
+  id        String   @id @default(cuid())
+  productId String
+  tag       String
+  createdAt DateTime @default(now())
+
+  // Relations
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([tag])
+  @@index([productId, tag])
+  @@map("product_tags")
+}
+
+// Product Q&A - Questions and Answers
+model ProductQuestion {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  userId    String?  // User who asked (optional for guest questions)
+  question  String   @db.Text
+  answer    String?  @db.Text
+  answeredBy String? // User ID who answered (verified purchasers or admins)
+  answeredAt DateTime?
+  
+  upvotes   Int      @default(0)
+  isApproved Boolean @default(false)
+  reportedCount Int  @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([userId])
+  @@index([isApproved])
+  @@index([createdAt])
+  @@map("product_questions")
+}
+
+// Stock Alerts - Notify users when product is back in stock
+model StockAlert {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  userId    String   // User who wants to be notified
+  email     String   // Email to notify
+  variantId String? // Specific variant if applicable
+  notified  Boolean  @default(false)
+  notifiedAt DateTime?
+  
+  createdAt DateTime @default(now())
+  expiresAt DateTime // Alert expires after some time
+
+  @@unique([userId, productId, variantId])
+  @@index([productId])
+  @@index([userId])
+  @@index([notified])
+  @@index([expiresAt])
+  @@map("stock_alerts")
+}
+
+// Recently Viewed Products - Track product views per user
+model RecentlyViewedProduct {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  userId    String   // User who viewed
+  viewedAt  DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+  @@index([userId, viewedAt])
+  @@map("recently_viewed_products")
+}
+
+// Product Comparison - Compare multiple products
+model ProductComparison {
+  id        String   @id @default(cuid())
+  userId    String   // User who created comparison
+  name      String?  // Optional name for saved comparison
+  
+  productIds String[] // Array of product IDs being compared (max 4)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("product_comparisons")
+}
+
+// Price History - Track price changes over time
+model PriceHistory {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  price     Decimal  @db.Decimal(10, 2)
+  compareAtPrice Decimal? @db.Decimal(10, 2)
+  changedBy String?  // User ID or system
+  reason    String?  // Reason for price change
+  
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+  @@index([productId, createdAt])
+  @@map("price_history")
+}
+
+// Product Search History - Track search queries
+model ProductSearchHistory {
+  id        String   @id @default(cuid())
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  
+  userId    String?  // User who searched (optional for guest searches)
+  query     String   // Search query
+  filters   Json?    // Applied filters
+  resultsCount Int?  // Number of results
+  
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([query])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@map("product_search_history")
+}
+

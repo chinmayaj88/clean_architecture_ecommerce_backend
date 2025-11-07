@@ -5,7 +5,7 @@
 **Database Name**: `notification_db`  
 **Service**: Notification Service  
 **Purpose**: Notification management, email templates, notification preferences  
-**Technology**: PostgreSQL 15+  
+**Technology**: PostgreSQL 16+  
 **ORM**: Prisma
 
 ---

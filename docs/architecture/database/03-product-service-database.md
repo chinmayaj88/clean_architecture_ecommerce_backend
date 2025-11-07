@@ -5,7 +5,7 @@
 **Database Name**: `product_db`  
 **Service**: Product Service  
 **Purpose**: Product catalog, categories, inventory, variants, reviews  
-**Technology**: PostgreSQL 15+  
+**Technology**: PostgreSQL 16+  
 **ORM**: Prisma
 
 ---
@@ -424,6 +424,220 @@ Electronics (level 0)
 **Business Rules**:
 - Multiple tags per product allowed
 - Tags are case-insensitive (normalized at application level)
+
+---
+
+### 9. `product_questions` Table
+
+**Purpose**: Product Q&A section - questions and answers
+
+**Columns**:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR(25) | PRIMARY KEY, DEFAULT cuid() | Unique question identifier |
+| `product_id` | VARCHAR(25) | FOREIGN KEY → products.id, INDEXED | Product identifier |
+| `user_id` | VARCHAR(25) | NULLABLE, INDEXED | User who asked (optional for guest questions) |
+| `question` | TEXT | NOT NULL | Question text |
+| `answer` | TEXT | NULLABLE | Answer text |
+| `answered_by` | VARCHAR(25) | NULLABLE | User ID who answered (verified purchasers or admins) |
+| `answered_at` | TIMESTAMP | NULLABLE | Answer timestamp |
+| `upvotes` | INTEGER | DEFAULT 0 | Upvote count |
+| `is_approved` | BOOLEAN | DEFAULT false, INDEXED | Approval status |
+| `reported_count` | INTEGER | DEFAULT 0 | Report count |
+| `created_at` | TIMESTAMP | DEFAULT now(), INDEXED | Creation timestamp |
+| `updated_at` | TIMESTAMP | DEFAULT now(), ON UPDATE now() | Last update timestamp |
+
+**Indexes**:
+- Primary Key: `id`
+- Index: `product_id` (for product Q&A queries)
+- Index: `user_id` (for user Q&A queries)
+- Index: `is_approved` (for filtering approved Q&A)
+- Index: `created_at` (for sorting by date)
+
+**Foreign Keys**:
+- `product_id` → `products.id` (CASCADE DELETE)
+
+**Business Rules**:
+- Questions can be asked by authenticated users or guests
+- Answers can be provided by verified purchasers or admins
+- Q&A requires approval before display
+
+---
+
+### 10. `stock_alerts` Table
+
+**Purpose**: Stock alert subscriptions - notify users when product is back in stock
+
+**Columns**:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR(25) | PRIMARY KEY, DEFAULT cuid() | Unique alert identifier |
+| `product_id` | VARCHAR(25) | FOREIGN KEY → products.id, INDEXED | Product identifier |
+| `user_id` | VARCHAR(25) | NOT NULL, INDEXED | User who wants to be notified |
+| `email` | VARCHAR(255) | NOT NULL | Email to notify |
+| `variant_id` | VARCHAR(25) | NULLABLE | Specific variant if applicable |
+| `notified` | BOOLEAN | DEFAULT false, INDEXED | Notification sent flag |
+| `notified_at` | TIMESTAMP | NULLABLE | Notification timestamp |
+| `created_at` | TIMESTAMP | DEFAULT now() | Creation timestamp |
+| `expires_at` | TIMESTAMP | NOT NULL, INDEXED | Alert expiration date |
+
+**Indexes**:
+- Primary Key: `id`
+- Unique Constraint: `(user_id, product_id, variant_id)` (one alert per user/product/variant)
+- Index: `product_id` (for product alert queries)
+- Index: `user_id` (for user alert queries)
+- Index: `notified` (for filtering sent alerts)
+- Index: `expires_at` (for cleanup queries)
+
+**Foreign Keys**:
+- `product_id` → `products.id` (CASCADE DELETE)
+
+**Business Rules**:
+- One alert per user per product/variant combination
+- Alerts expire after a set period (e.g., 30 days)
+- Email notification sent when product is back in stock
+
+---
+
+### 11. `recently_viewed_products` Table
+
+**Purpose**: Track recently viewed products per user
+
+**Columns**:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR(25) | PRIMARY KEY, DEFAULT cuid() | Unique view identifier |
+| `product_id` | VARCHAR(25) | FOREIGN KEY → products.id, INDEXED | Product identifier |
+| `user_id` | VARCHAR(25) | NOT NULL, INDEXED | User who viewed |
+| `viewed_at` | TIMESTAMP | DEFAULT now(), INDEXED | View timestamp |
+
+**Indexes**:
+- Primary Key: `id`
+- Unique Constraint: `(user_id, product_id)` (one record per user/product)
+- Index: `user_id` (for user view queries)
+- Index: `product_id` (for product view queries)
+- Composite Index: `(user_id, viewed_at)` (for ordered queries)
+
+**Foreign Keys**:
+- `product_id` → `products.id` (CASCADE DELETE)
+
+**Business Rules**:
+- One record per user per product (updated on re-view)
+- Auto-cleanup old views (e.g., older than 90 days)
+
+---
+
+### 12. `product_comparisons` Table
+
+**Purpose**: Product comparisons - compare up to 4 products side-by-side
+
+**Columns**:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR(25) | PRIMARY KEY, DEFAULT cuid() | Unique comparison identifier |
+| `user_id` | VARCHAR(25) | NOT NULL, INDEXED | User who created comparison |
+| `name` | VARCHAR(255) | NULLABLE | Optional name for saved comparison |
+| `product_ids` | TEXT[] | NOT NULL | Array of product IDs (max 4) |
+| `created_at` | TIMESTAMP | DEFAULT now(), INDEXED | Creation timestamp |
+| `updated_at` | TIMESTAMP | DEFAULT now(), ON UPDATE now() | Last update timestamp |
+
+**Indexes**:
+- Primary Key: `id`
+- Index: `user_id` (for user comparison queries)
+- Index: `created_at` (for sorting by date)
+
+**Business Rules**:
+- Maximum 4 products per comparison
+- Product IDs stored as array
+- Comparisons can be saved with optional name
+
+---
+
+### 13. `price_history` Table
+
+**Purpose**: Track price changes over time
+
+**Columns**:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR(25) | PRIMARY KEY, DEFAULT cuid() | Unique history record identifier |
+| `product_id` | VARCHAR(25) | FOREIGN KEY → products.id, INDEXED | Product identifier |
+| `price` | DECIMAL(10,2) | NOT NULL | Price at this point |
+| `compare_at_price` | DECIMAL(10,2) | NULLABLE | Compare price at this point |
+| `changed_by` | VARCHAR(25) | NULLABLE | User ID or system |
+| `reason` | VARCHAR(255) | NULLABLE | Reason for price change |
+| `created_at` | TIMESTAMP | DEFAULT now(), INDEXED | Change timestamp |
+
+**Indexes**:
+- Primary Key: `id`
+- Index: `product_id` (for product price history queries)
+- Index: `created_at` (for sorting by date)
+- Composite Index: `(product_id, created_at)` (for product history queries)
+
+**Foreign Keys**:
+- `product_id` → `products.id` (CASCADE DELETE)
+
+**Business Rules**:
+- Record created on every price change
+- Historical data for price tracking and analytics
+
+---
+
+### 14. `product_search_history` Table
+
+**Purpose**: Track search queries for analytics and recommendations
+
+**Columns**:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR(25) | PRIMARY KEY, DEFAULT cuid() | Unique search record identifier |
+| `product_id` | VARCHAR(25) | FOREIGN KEY → products.id, NULLABLE, INDEXED | Product clicked (if any) |
+| `user_id` | VARCHAR(25) | NULLABLE, INDEXED | User who searched (optional for guest searches) |
+| `query` | VARCHAR(500) | NOT NULL, INDEXED | Search query |
+| `filters` | JSONB | NULLABLE | Applied filters |
+| `results_count` | INTEGER | NULLABLE | Number of results |
+| `created_at` | TIMESTAMP | DEFAULT now(), INDEXED | Search timestamp |
+
+**Indexes**:
+- Primary Key: `id`
+- Index: `user_id` (for user search queries)
+- Index: `query` (for query analytics)
+- Index: `created_at` (for sorting by date)
+- Composite Index: `(user_id, created_at)` (for user search history)
+
+**Foreign Keys**:
+- `product_id` → `products.id` (SET NULL on delete)
+
+**Business Rules**:
+- Track all search queries for analytics
+- Optional product_id if user clicked on a result
+- Filters stored as JSON for flexible filtering
+
+---
+
+## Enhanced Features Summary
+
+The Product Service database now includes:
+
+1. **Product Q&A** - Questions and answers with moderation
+2. **Stock Alerts** - Notify users when products are back in stock
+3. **Recently Viewed Products** - Track user product views
+4. **Product Comparisons** - Compare up to 4 products side-by-side
+5. **Price History** - Track price changes over time
+6. **Search History** - Track search queries for analytics
+
+Additionally, the `products` table includes:
+- `badges` (String[]) - Product badges (new, sale, featured, bestseller, etc.)
+- `view_count` (Integer) - Product view count
+- `purchase_count` (Integer) - Product purchase count
+- `search_count` (Integer) - Product search count
+- Full-text search index on `name`, `description`, `short_description`
 
 ---
 

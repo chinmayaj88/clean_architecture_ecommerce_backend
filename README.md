@@ -24,7 +24,9 @@ This project was built to showcase:
 - **SOLID Principles**: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion
 - **Production Readiness**: Health checks, graceful shutdown, distributed caching, rate limiting, error handling
 
-**Tech Stack**: TypeScript, Node.js, Express, PostgreSQL, Prisma, Redis, Docker, AWS SNS/SQS, LocalStack
+**Tech Stack**: TypeScript, Node.js 22+, Express 4.21+, PostgreSQL 16+, Prisma 6.1+, Redis 7.4+, Docker, AWS SNS/SQS, LocalStack
+
+**Real-World Features**: This platform includes production-ready features similar to major e-commerce platforms including MFA/TOTP, device management, login history, session management, suspicious login detection, recently viewed products, activity tracking, profile completion, granular notification preferences, GDPR compliance, advanced search, product recommendations, Q&A, review moderation, stock alerts, product comparisons, and more.
 
 ---
 
@@ -40,11 +42,11 @@ This is a monorepo containing **Core E-Commerce Services** that work together to
 See [Environment Configuration](./docs/environment-configuration.md) for details.
 
 **Implemented Services:**
-- **auth-service** ✅ - Authentication, authorization, JWT, RBAC
-- **user-service** ✅ - User profiles, addresses, payment methods, wishlist
+- **auth-service** ✅ - Authentication, authorization, JWT, RBAC, MFA/TOTP, Device Management, Login History, Session Management, Suspicious Login Detection
+- **user-service** ✅ - User profiles, addresses, payment methods, wishlist, Recently Viewed Products, Activity Tracking, Profile Completion, Notification Preferences, GDPR Compliance
+- **product-service** ✅ - Product catalog, Advanced Search, Recommendations, Q&A, Review Moderation, Stock Alerts, Product Comparisons, Badges
 
 **Services to Implement:**
-- **product-service** 🚧 - Product catalog
 - **order-service** 🚧 - Order management
 - **payment-service** 🚧 - Payment processing
 - **cart-service** 🚧 - Shopping cart
@@ -69,15 +71,15 @@ Each service follows **Clean Architecture** with clear separation between:
 ### Prerequisites
 
 **For Linux/Mac:**
-- Node.js >= 18.0.0
+- Node.js >= 22.0.0
 - Docker & Docker Compose
-- npm >= 9.0.0
+- npm >= 10.0.0
 - Make (usually pre-installed)
 
 **For Windows:**
-- Node.js >= 18.0.0
+- Node.js >= 22.0.0
 - Docker Desktop for Windows
-- npm >= 9.0.0
+- npm >= 10.0.0
 - Make for Windows ([GnuWin32](http://gnuwin32.sourceforge.net/packages/make.htm) or use WSL)
 
 **Note:** Environment variables (`.env` files) will be provided by your team lead. Ensure you have the required `.env` files before proceeding.

@@ -5,9 +5,23 @@
  */
 
 import express from 'express';
+import helmet from 'helmet';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Helmet v8 requires explicit configuration
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
 
 app.use(express.json());
 

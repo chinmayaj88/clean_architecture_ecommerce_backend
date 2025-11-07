@@ -5,7 +5,7 @@
 **Database Name**: `order_db`  
 **Service**: Order Service  
 **Purpose**: Order management, order items, order history, shipping  
-**Technology**: PostgreSQL 15+  
+**Technology**: PostgreSQL 16+  
 **ORM**: Prisma
 
 ---

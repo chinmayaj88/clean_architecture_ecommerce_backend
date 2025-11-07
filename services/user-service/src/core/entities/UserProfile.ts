@@ -28,6 +28,9 @@ export interface UserProfile {
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt?: Date;
+  
+  // Profile completion
+  profileCompletionScore: number; // 0-100
 }
 
 export interface CreateUserProfileData {

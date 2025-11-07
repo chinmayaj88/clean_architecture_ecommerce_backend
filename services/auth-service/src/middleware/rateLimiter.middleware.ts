@@ -4,7 +4,7 @@
  */
 
 import rateLimit from 'express-rate-limit';
-import RedisStore from 'rate-limit-redis';
+import { RedisStore } from 'rate-limit-redis';
 import { getEnvConfig } from '../config/env';
 import { getCache } from '../infrastructure/cache/RedisCache';
 
@@ -29,10 +29,10 @@ export function createRateLimiter(options?: {
     legacyHeaders: false,
   };
 
-  // Use Redis store if Redis is available
+  // Use Redis store if Redis is available (rate-limit-redis v5 API)
   if (redisClient && cache.isAvailable()) {
     rateLimiterOptions.store = new RedisStore({
-      sendCommand: (...args: string[]) => {
+      sendCommand: async (...args: string[]) => {
         return (redisClient as any).call(...args);
       },
       prefix: 'rl:',
@@ -50,4 +50,3 @@ export const authRateLimiter = createRateLimiter({
   max: 5, // 5 requests per window
   message: 'Too many authentication attempts, please try again later',
 });
-

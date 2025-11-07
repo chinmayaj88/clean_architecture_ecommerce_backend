@@ -249,18 +249,18 @@ Each service manages its own dependencies:
 // services/auth-service/package.json
 {
   "dependencies": {
-    "express": "^4.18.0",
-    "@prisma/client": "^5.0.0",
-    "bcrypt": "^5.1.0"
+    "express": "^4.21.2",
+    "@prisma/client": "^6.1.0",
+    "bcryptjs": "^2.4.3"
   }
 }
 
 // services/user-service/package.json
 {
   "dependencies": {
-    "express": "^4.18.0",
-    "@prisma/client": "^5.0.0",
-    "zod": "^3.22.0"  // Different dependencies
+    "express": "^4.21.2",
+    "@prisma/client": "^6.1.0",
+    "zod": "^3.24.1"  // Different dependencies
   }
 }
 ```
@@ -729,6 +729,36 @@ Developers can work independently on services without conflicts, enabling fast, 
 
 ---
 
-**Last Updated**: 2024  
-**Architecture Version**: 2.0
+**Last Updated**: 2025  
+**Architecture Version**: 2.2 (Real-World Features Implementation)
+
+## Real-World Features
+
+All three implemented services (Auth, User, Product) now include comprehensive real-world features:
+
+### Auth Service
+- ✅ Multi-Factor Authentication (MFA/TOTP)
+- ✅ Device Management
+- ✅ Login History & Activity Tracking
+- ✅ Session Management
+- ✅ IP-based Security & Suspicious Login Detection
+
+### User Service
+- ✅ Recently Viewed Products
+- ✅ User Activity Tracking & Analytics
+- ✅ Profile Completion Score
+- ✅ Granular Notification Preferences
+- ✅ Privacy Settings & GDPR Compliance
+
+### Product Service
+- ✅ Advanced Search with Filters
+- ✅ Product Recommendations Engine
+- ✅ Product Q&A Section
+- ✅ Review Moderation Workflow
+- ✅ Product Badges
+- ✅ Stock Alerts
+- ✅ Product View Tracking
+- ✅ Product Comparisons
+
+See [FEATURES_SUMMARY.md](../../FEATURES_SUMMARY.md) for complete documentation of all features and API endpoints.
 

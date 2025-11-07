@@ -5,7 +5,7 @@
 **Database Name**: `auth_db`  
 **Service**: Auth Service  
 **Purpose**: Authentication, authorization, and security management  
-**Technology**: PostgreSQL 15+  
+**Technology**: PostgreSQL 16+  
 **ORM**: Prisma
 
 ---
@@ -324,7 +324,166 @@ erDiagram
 
 ---
 
-### 8. `rate_limits` Table (Optional)
+### 8. `devices` Table
+
+**Purpose**: Device tracking and management for security
+
+**Columns**:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR(25) | PRIMARY KEY, DEFAULT cuid() | Unique device identifier |
+| `user_id` | VARCHAR(25) | FOREIGN KEY → users.id, INDEXED | User identifier |
+| `device_id` | VARCHAR(255) | UNIQUE, NOT NULL | Device fingerprint/ID |
+| `device_name` | VARCHAR(255) | NULLABLE | User-friendly device name |
+| `device_type` | VARCHAR(50) | NULLABLE | Device type (mobile, desktop, tablet) |
+| `user_agent` | TEXT | NULLABLE | User agent string |
+| `ip_address` | VARCHAR(45) | NULLABLE | IP address |
+| `is_trusted` | BOOLEAN | DEFAULT false, INDEXED | Trust status |
+| `is_active` | BOOLEAN | DEFAULT true, INDEXED | Active status |
+| `last_used_at` | TIMESTAMP | NULLABLE, INDEXED | Last usage timestamp |
+| `created_at` | TIMESTAMP | DEFAULT now() | Creation timestamp |
+| `updated_at` | TIMESTAMP | DEFAULT now(), ON UPDATE now() | Last update timestamp |
+
+**Indexes**:
+- Primary Key: `id`
+- Unique Index: `device_id` (for device lookup)
+- Index: `user_id` (for user device queries)
+- Index: `is_trusted` (for filtering trusted devices)
+- Index: `is_active` (for filtering active devices)
+- Index: `last_used_at` (for cleanup queries)
+
+**Foreign Keys**:
+- `user_id` → `users.id` (CASCADE DELETE)
+
+**Business Rules**:
+- One device record per device per user
+- Devices can be marked as trusted
+- Inactive devices can be cleaned up after period
+
+---
+
+### 9. `login_history` Table
+
+**Purpose**: Detailed login history tracking with IP, location, device info
+
+**Columns**:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR(25) | PRIMARY KEY, DEFAULT cuid() | Unique history record identifier |
+| `user_id` | VARCHAR(25) | FOREIGN KEY → users.id, INDEXED | User identifier |
+| `status` | VARCHAR(20) | NOT NULL, INDEXED | Login status (success, failed, blocked) |
+| `ip_address` | VARCHAR(45) | NULLABLE, INDEXED | IP address |
+| `user_agent` | TEXT | NULLABLE | User agent string |
+| `device_id` | VARCHAR(255) | NULLABLE, INDEXED | Device identifier |
+| `country` | VARCHAR(2) | NULLABLE | Country code (ISO 3166-1 alpha-2) |
+| `city` | VARCHAR(100) | NULLABLE | City name |
+| `is_suspicious` | BOOLEAN | DEFAULT false, INDEXED | Suspicious login flag |
+| `risk_score` | INTEGER | NULLABLE | Risk score (0-100) |
+| `metadata` | JSONB | NULLABLE | Additional context |
+| `created_at` | TIMESTAMP | DEFAULT now(), INDEXED | Login timestamp |
+
+**Indexes**:
+- Primary Key: `id`
+- Index: `user_id` (for user history queries)
+- Index: `status` (for filtering by status)
+- Index: `ip_address` (for IP-based queries)
+- Index: `device_id` (for device-based queries)
+- Index: `is_suspicious` (for suspicious login queries)
+- Index: `created_at` (for time-based queries)
+- Composite Index: `(user_id, created_at)` (for user history)
+
+**Foreign Keys**:
+- `user_id` → `users.id` (CASCADE DELETE)
+- `device_id` → `devices.id` (SET NULL on delete)
+
+**Business Rules**:
+- Record created for every login attempt
+- Suspicious logins flagged with risk score
+- Geolocation data populated when available
+
+---
+
+### 10. `user_sessions` Table
+
+**Purpose**: Active session management
+
+**Columns**:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR(25) | PRIMARY KEY, DEFAULT cuid() | Unique session identifier |
+| `user_id` | VARCHAR(25) | FOREIGN KEY → users.id, INDEXED | User identifier |
+| `refresh_token_id` | VARCHAR(25) | FOREIGN KEY → refresh_tokens.id, NULLABLE | Refresh token reference |
+| `device_id` | VARCHAR(255) | NULLABLE, INDEXED | Device identifier |
+| `ip_address` | VARCHAR(45) | NULLABLE | IP address |
+| `user_agent` | TEXT | NULLABLE | User agent string |
+| `is_active` | BOOLEAN | DEFAULT true, INDEXED | Active status |
+| `expires_at` | TIMESTAMP | NOT NULL, INDEXED | Session expiration |
+| `last_activity_at` | TIMESTAMP | NULLABLE, INDEXED | Last activity timestamp |
+| `created_at` | TIMESTAMP | DEFAULT now() | Creation timestamp |
+| `updated_at` | TIMESTAMP | DEFAULT now(), ON UPDATE now() | Last update timestamp |
+
+**Indexes**:
+- Primary Key: `id`
+- Index: `user_id` (for user session queries)
+- Index: `refresh_token_id` (for token lookup)
+- Index: `device_id` (for device-based queries)
+- Index: `is_active` (for filtering active sessions)
+- Index: `expires_at` (for cleanup queries)
+- Index: `last_activity_at` (for activity tracking)
+
+**Foreign Keys**:
+- `user_id` → `users.id` (CASCADE DELETE)
+- `refresh_token_id` → `refresh_tokens.id` (SET NULL on delete)
+
+**Business Rules**:
+- One session per refresh token
+- Sessions expire based on refresh token expiration
+- Inactive sessions can be cleaned up
+
+---
+
+### 11. `mfa_backup_codes` Table
+
+**Purpose**: MFA backup codes for account recovery
+
+**Columns**:
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | VARCHAR(25) | PRIMARY KEY, DEFAULT cuid() | Unique code identifier |
+| `user_id` | VARCHAR(25) | FOREIGN KEY → users.id, INDEXED | User identifier |
+| `code` | VARCHAR(255) | NOT NULL, INDEXED | Hashed backup code |
+| `used` | BOOLEAN | DEFAULT false, INDEXED | Usage status |
+| `used_at` | TIMESTAMP | NULLABLE | Usage timestamp |
+| `created_at` | TIMESTAMP | DEFAULT now() | Creation timestamp |
+| `expires_at` | TIMESTAMP | NOT NULL, INDEXED | Expiration timestamp |
+
+**Indexes**:
+- Primary Key: `id`
+- Index: `user_id` (for user code queries)
+- Index: `code` (for code lookup)
+- Index: `used` (for filtering used codes)
+- Index: `expires_at` (for cleanup queries)
+
+**Foreign Keys**:
+- `user_id` → `users.id` (CASCADE DELETE)
+
+**Business Rules**:
+- Codes are hashed before storage
+- Codes expire after set period
+- Used codes cannot be reused
+
+**Note**: The `users` table also includes MFA fields:
+- `mfa_enabled` (BOOLEAN) - MFA enabled flag
+- `mfa_secret` (VARCHAR) - TOTP secret (encrypted)
+- `mfa_backup_codes` (TEXT[]) - Backup codes array (encrypted)
+
+---
+
+### 12. `rate_limits` Table (Optional)
 
 **Purpose**: Rate limiting tracking (alternative to Redis)
 
@@ -359,14 +518,23 @@ erDiagram
 - `users.email` - Unique index for login lookups
 - `users.is_active` - Filter active users
 - `users.locked_until` - Check account lockout
+- `users.mfa_enabled` - Filter MFA-enabled users
 - `refresh_tokens.token` - Token validation
 - `refresh_tokens.expires_at` - Cleanup expired tokens
+- `devices.user_id` - User device queries
+- `devices.device_id` - Device lookup
+- `login_history.user_id` - User history queries
+- `login_history.status` - Filter by status
+- `login_history.is_suspicious` - Suspicious login queries
+- `user_sessions.user_id` - User session queries
+- `user_sessions.is_active` - Active session queries
 - `security_audit_logs.created_at` - Time-based queries
 - `security_audit_logs.user_id, created_at` - User audit history
 
 ### Composite Indexes
 - `user_roles(user_id, role_id)` - Unique constraint
 - `security_audit_logs(user_id, created_at)` - User history queries
+- `login_history(user_id, created_at)` - User login history
 
 ---
 

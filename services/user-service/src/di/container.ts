@@ -9,6 +9,9 @@ import { IAddressRepository } from '../ports/interfaces/IAddressRepository';
 import { IPaymentMethodRepository } from '../ports/interfaces/IPaymentMethodRepository';
 import { IUserPreferenceRepository } from '../ports/interfaces/IUserPreferenceRepository';
 import { IWishlistItemRepository } from '../ports/interfaces/IWishlistItemRepository';
+import { IRecentlyViewedProductRepository } from '../ports/interfaces/IRecentlyViewedProductRepository';
+import { IUserActivityRepository } from '../ports/interfaces/IUserActivityRepository';
+import { INotificationPreferenceRepository } from '../ports/interfaces/INotificationPreferenceRepository';
 import { IAuthServiceClient } from '../ports/interfaces/IAuthServiceClient';
 import { IEventConsumer } from '../ports/interfaces/IEventConsumer';
 
@@ -18,6 +21,9 @@ import { PrismaPaymentMethodRepository } from '../infrastructure/database/Prisma
 import { PrismaUserPreferenceRepository } from '../infrastructure/database/PrismaUserPreferenceRepository';
 import { PrismaWishlistItemRepository } from '../infrastructure/database/PrismaWishlistItemRepository';
 import { PrismaEventLogRepository } from '../infrastructure/database/PrismaEventLogRepository';
+import { PrismaRecentlyViewedProductRepository } from '../infrastructure/database/PrismaRecentlyViewedProductRepository';
+import { PrismaUserActivityRepository } from '../infrastructure/database/PrismaUserActivityRepository';
+import { PrismaNotificationPreferenceRepository } from '../infrastructure/database/PrismaNotificationPreferenceRepository';
 import { AuthServiceClient } from '../infrastructure/auth/AuthServiceClient';
 import { SQSEventConsumer } from '../infrastructure/events/SQSEventConsumer';
 import { createLogger } from '../infrastructure/logging/logger';
@@ -35,6 +41,16 @@ import { UpdatePaymentMethodUseCase } from '../core/use-cases/UpdatePaymentMetho
 import { DeletePaymentMethodUseCase } from '../core/use-cases/DeletePaymentMethodUseCase';
 import { AddToWishlistUseCase } from '../core/use-cases/AddToWishlistUseCase';
 import { GetWishlistUseCase } from '../core/use-cases/GetWishlistUseCase';
+import { TrackProductViewUseCase } from '../core/use-cases/TrackProductViewUseCase';
+import { GetRecentlyViewedProductsUseCase } from '../core/use-cases/GetRecentlyViewedProductsUseCase';
+import { TrackUserActivityUseCase } from '../core/use-cases/TrackUserActivityUseCase';
+import { GetUserActivityUseCase } from '../core/use-cases/GetUserActivityUseCase';
+import { GetUserActivityStatsUseCase } from '../core/use-cases/GetUserActivityStatsUseCase';
+import { CalculateProfileCompletionScoreUseCase } from '../core/use-cases/CalculateProfileCompletionScoreUseCase';
+import { UpdateNotificationPreferenceUseCase } from '../core/use-cases/UpdateNotificationPreferenceUseCase';
+import { GetNotificationPreferencesUseCase } from '../core/use-cases/GetNotificationPreferencesUseCase';
+import { ExportUserDataUseCase } from '../core/use-cases/ExportUserDataUseCase';
+import { DeleteUserDataUseCase } from '../core/use-cases/DeleteUserDataUseCase';
 import { HandleUserCreatedEventUseCase } from '../core/use-cases/HandleUserCreatedEventUseCase';
 
 import { UserController } from '../application/controllers/UserController';
@@ -51,6 +67,9 @@ export class Container {
   private paymentMethodRepository: IPaymentMethodRepository;
   private _userPreferenceRepository: IUserPreferenceRepository; // Reserved for future use
   private wishlistItemRepository: IWishlistItemRepository;
+  private recentlyViewedProductRepository: IRecentlyViewedProductRepository;
+  private userActivityRepository: IUserActivityRepository;
+  private notificationPreferenceRepository: INotificationPreferenceRepository;
   private _eventLogRepository: PrismaEventLogRepository; // Reserved for future use
   
   // External Services
@@ -70,6 +89,16 @@ export class Container {
   private deletePaymentMethodUseCase: DeletePaymentMethodUseCase;
   private addToWishlistUseCase: AddToWishlistUseCase;
   private getWishlistUseCase: GetWishlistUseCase;
+  private trackProductViewUseCase: TrackProductViewUseCase;
+  private getRecentlyViewedProductsUseCase: GetRecentlyViewedProductsUseCase;
+  private trackUserActivityUseCase: TrackUserActivityUseCase;
+  private getUserActivityUseCase: GetUserActivityUseCase;
+  private getUserActivityStatsUseCase: GetUserActivityStatsUseCase;
+  private calculateProfileCompletionScoreUseCase: CalculateProfileCompletionScoreUseCase;
+  private updateNotificationPreferenceUseCase: UpdateNotificationPreferenceUseCase;
+  private getNotificationPreferencesUseCase: GetNotificationPreferencesUseCase;
+  private exportUserDataUseCase: ExportUserDataUseCase;
+  private deleteUserDataUseCase: DeleteUserDataUseCase;
   private handleUserCreatedEventUseCase: HandleUserCreatedEventUseCase;
   
   // Controllers
@@ -93,6 +122,9 @@ export class Container {
     this.paymentMethodRepository = new PrismaPaymentMethodRepository(this.prisma);
     this._userPreferenceRepository = new PrismaUserPreferenceRepository(this.prisma);
     this.wishlistItemRepository = new PrismaWishlistItemRepository(this.prisma);
+    this.recentlyViewedProductRepository = new PrismaRecentlyViewedProductRepository(this.prisma);
+    this.userActivityRepository = new PrismaUserActivityRepository(this.prisma);
+    this.notificationPreferenceRepository = new PrismaNotificationPreferenceRepository(this.prisma);
     this._eventLogRepository = new PrismaEventLogRepository(this.prisma);
     
     // References to avoid unused variable warnings (reserved for future use)
@@ -106,7 +138,11 @@ export class Container {
     // Initialize use cases
     this._createUserProfileUseCase = new CreateUserProfileUseCase(this.userProfileRepository);
     this.getUserProfileUseCase = new GetUserProfileUseCase(this.userProfileRepository);
-    this.updateUserProfileUseCase = new UpdateUserProfileUseCase(this.userProfileRepository);
+    this.updateUserProfileUseCase = new UpdateUserProfileUseCase(
+      this.userProfileRepository,
+      this.addressRepository,
+      this.paymentMethodRepository
+    );
     this.createAddressUseCase = new CreateAddressUseCase(this.addressRepository);
     this.getAddressesUseCase = new GetAddressesUseCase(this.addressRepository);
     this.updateAddressUseCase = new UpdateAddressUseCase(this.addressRepository);
@@ -116,6 +152,35 @@ export class Container {
     this.deletePaymentMethodUseCase = new DeletePaymentMethodUseCase(this.paymentMethodRepository);
     this.addToWishlistUseCase = new AddToWishlistUseCase(this.wishlistItemRepository);
     this.getWishlistUseCase = new GetWishlistUseCase(this.wishlistItemRepository);
+    this.trackProductViewUseCase = new TrackProductViewUseCase(
+      this.recentlyViewedProductRepository,
+      this.userActivityRepository
+    );
+    this.getRecentlyViewedProductsUseCase = new GetRecentlyViewedProductsUseCase(this.recentlyViewedProductRepository);
+    this.trackUserActivityUseCase = new TrackUserActivityUseCase(this.userActivityRepository);
+    this.getUserActivityUseCase = new GetUserActivityUseCase(this.userActivityRepository);
+    this.getUserActivityStatsUseCase = new GetUserActivityStatsUseCase(this.userActivityRepository);
+    this.calculateProfileCompletionScoreUseCase = new CalculateProfileCompletionScoreUseCase(this.userProfileRepository);
+    this.updateNotificationPreferenceUseCase = new UpdateNotificationPreferenceUseCase(this.notificationPreferenceRepository);
+    this.getNotificationPreferencesUseCase = new GetNotificationPreferencesUseCase(this.notificationPreferenceRepository);
+    this.exportUserDataUseCase = new ExportUserDataUseCase(
+      this.userProfileRepository,
+      this.addressRepository,
+      this.paymentMethodRepository,
+      this.wishlistItemRepository,
+      this.recentlyViewedProductRepository,
+      this.userActivityRepository,
+      this.notificationPreferenceRepository
+    );
+    this.deleteUserDataUseCase = new DeleteUserDataUseCase(
+      this.userProfileRepository,
+      this.addressRepository,
+      this.paymentMethodRepository,
+      this.wishlistItemRepository,
+      this.recentlyViewedProductRepository,
+      this.userActivityRepository,
+      this.notificationPreferenceRepository
+    );
     this.handleUserCreatedEventUseCase = new HandleUserCreatedEventUseCase(this.userProfileRepository);
 
     // Initialize controllers
@@ -131,6 +196,16 @@ export class Container {
       this.deletePaymentMethodUseCase,
       this.addToWishlistUseCase,
       this.getWishlistUseCase,
+      this.trackProductViewUseCase,
+      this.getRecentlyViewedProductsUseCase,
+      this.trackUserActivityUseCase,
+      this.getUserActivityUseCase,
+      this.getUserActivityStatsUseCase,
+      this.calculateProfileCompletionScoreUseCase,
+      this.updateNotificationPreferenceUseCase,
+      this.getNotificationPreferencesUseCase,
+      this.exportUserDataUseCase,
+      this.deleteUserDataUseCase,
       this.addressRepository,
       this.paymentMethodRepository,
       this.wishlistItemRepository

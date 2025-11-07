@@ -16,12 +16,12 @@
 ## Runtime & Language
 
 ### Node.js
-- **Version**: >= 18.0.0
+- **Version**: >= 22.0.0
 - **Purpose**: JavaScript runtime
-- **Why**: Fast, scalable, large ecosystem
+- **Why**: Fast, scalable, large ecosystem, latest LTS features
 
 ### TypeScript
-- **Version**: ^5.3.3
+- **Version**: ^5.7.2
 - **Purpose**: Type-safe JavaScript
 - **Why**: Type safety, better IDE support, fewer bugs
 
@@ -30,7 +30,7 @@
 ## Frameworks & Libraries
 
 ### Express.js
-- **Version**: ^4.18.2
+- **Version**: ^4.21.2
 - **Purpose**: Web framework
 - **Features Used**:
   - Routing
@@ -38,7 +38,7 @@
   - Request/Response handling
 
 ### Prisma
-- **Version**: ^5.9.1
+- **Version**: ^6.1.0
 - **Purpose**: ORM and database toolkit
 - **Features**:
   - Type-safe database access
@@ -47,36 +47,41 @@
   - Prisma Studio (GUI)
 
 ### Zod
-- **Version**: ^3.22.4
+- **Version**: ^3.24.1
 - **Purpose**: Schema validation
 - **Use**: Environment variable validation
 
 ### Winston
-- **Version**: ^3.11.0
+- **Version**: ^3.17.0
 - **Purpose**: Logging
 - **Features**: Structured JSON logging, file transports
 
 ### Helmet
-- **Version**: ^7.1.0
+- **Version**: ^8.0.0
 - **Purpose**: Security headers
 - **Protection**: XSS, clickjacking, content-type sniffing
 
 ### Express Validator
-- **Version**: ^7.0.1
+- **Version**: ^7.2.0
 - **Purpose**: Request validation
 - **Features**: Input validation, sanitization
 
 ### Express Rate Limit
-- **Version**: ^7.1.5
+- **Version**: ^7.4.1
 - **Purpose**: Rate limiting
 - **Backend**: Redis (distributed) or in-memory
+
+### Rate Limit Redis
+- **Version**: ^5.0.0
+- **Purpose**: Redis backend for express-rate-limit
+- **Use**: Distributed rate limiting across service instances
 
 ---
 
 ## Databases
 
 ### PostgreSQL
-- **Version**: 15-alpine
+- **Version**: 16-alpine
 - **Purpose**: Primary database
 - **Configuration**: One database per service
 - **Features Used**:
@@ -96,7 +101,7 @@
 ## Caching
 
 ### Redis
-- **Version**: 7-alpine
+- **Version**: 7.4-alpine
 - **Purpose**: Distributed caching and rate limiting
 - **Use Cases**:
   - User data caching
@@ -104,7 +109,7 @@
   - Session storage (future)
 
 ### ioredis
-- **Version**: ^5.3.2
+- **Version**: ^5.4.1
 - **Purpose**: Redis client for Node.js
 - **Features**: Connection pooling, cluster support
 
@@ -125,9 +130,10 @@
 - **Use**: Reliable event processing
 
 ### AWS SDK
-- **Version**: ^2.1692.0
+- **Version**: ^3.720.0 (v3)
 - **Purpose**: AWS service integration
 - **Services Used**: SNS, SQS
+- **Packages**: `@aws-sdk/client-sns`, `@aws-sdk/client-sqs`
 
 ---
 
@@ -210,7 +216,7 @@
 ## HTTP Client
 
 ### Axios
-- **Version**: ^1.6.2
+- **Version**: ^1.7.9
 - **Purpose**: HTTP client
 - **Use**: Service-to-service communication (user-service → auth-service)
 
@@ -219,7 +225,7 @@
 ## Utilities
 
 ### UUID
-- **Version**: ^9.0.1
+- **Version**: ^10.0.0
 - **Purpose**: Unique identifier generation
 - **Use**: Request IDs, event IDs
 
@@ -238,7 +244,7 @@
 - **Status**: Configured, tests to be written
 
 ### Supertest
-- **Version**: ^6.3.4
+- **Version**: ^7.0.0
 - **Purpose**: HTTP assertion library
 - **Use**: API endpoint testing
 
@@ -247,14 +253,14 @@
 ## Technology Stack Summary
 
 ### Backend
-- **Runtime**: Node.js 18+
-- **Language**: TypeScript 5.3+
-- **Framework**: Express.js 4.18+
-- **ORM**: Prisma 5.9+
+- **Runtime**: Node.js 22+
+- **Language**: TypeScript 5.7+
+- **Framework**: Express.js 4.21+
+- **ORM**: Prisma 6.1+
 
 ### Databases
-- **Primary**: PostgreSQL 15
-- **Cache**: Redis 7
+- **Primary**: PostgreSQL 16
+- **Cache**: Redis 7.4
 
 ### Cloud Services (Production)
 - **Events**: AWS SNS/SQS
@@ -278,9 +284,9 @@
 ## Version Compatibility
 
 All packages are tested and compatible with:
-- Node.js: >= 18.0.0
-- npm: >= 9.0.0
-- TypeScript: ^5.3.3
+- Node.js: >= 22.0.0
+- npm: >= 10.0.0
+- TypeScript: ^5.7.2
 
 ---
 

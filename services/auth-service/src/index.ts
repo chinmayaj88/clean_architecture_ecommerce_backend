@@ -9,6 +9,7 @@ import timeout from 'connect-timeout';
 import { getEnvConfig } from './config/env';
 import { Container } from './di/container';
 import { createAuthRoutes } from './routes/auth.routes';
+import { createSecurityRoutes } from './routes/security.routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.middleware';
 import { requestIdMiddleware } from './middleware/requestId.middleware';
 import { createLogger } from './infrastructure/logging/logger';
@@ -20,7 +21,18 @@ const config = getEnvConfig();
 
 const app = express();
 
-app.use(helmet());
+// Helmet v8 requires explicit configuration
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
 
 const corsOptions: cors.CorsOptions = {
   credentials: true,
@@ -146,7 +158,9 @@ try {
 
 const container = Container.getInstance();
 const authRoutes = createAuthRoutes(container.getAuthController());
+const securityRoutes = createSecurityRoutes(container.getSecurityController());
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/security', securityRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

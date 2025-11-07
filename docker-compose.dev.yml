@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # PostgreSQL database for auth-service
   postgres-auth:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: postgres-auth
     environment:
       POSTGRES_USER: auth_user
@@ -23,7 +23,7 @@ services:
 
   # PostgreSQL database for user-service
   postgres-user:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: postgres-user
     environment:
       POSTGRES_USER: user_user
@@ -43,7 +43,7 @@ services:
 
   # PostgreSQL database for product-service
   postgres-product:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: postgres-product
     environment:
       POSTGRES_USER: product_user
@@ -63,7 +63,7 @@ services:
 
   # Redis for caching and distributed rate limiting
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     container_name: redis
     ports:
       - "6379:6379"

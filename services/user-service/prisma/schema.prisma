@@ -38,15 +38,22 @@ model UserProfile {
   updatedAt DateTime @updatedAt
   lastLoginAt DateTime?
   
+  // Profile completion
+  profileCompletionScore Int @default(0) // 0-100
+  
   // Relations
   addresses      Address[]
   paymentMethods PaymentMethod[]
   preferences    UserPreference[]
   wishlistItems  WishlistItem[]
+  recentlyViewedProducts RecentlyViewedProduct[]
+  activities     UserActivity[]
+  notificationPreferences NotificationPreference[]
   
   @@index([userId])
   @@index([email])
   @@index([isActive])
+  @@index([profileCompletionScore])
   @@map("user_profiles")
 }
 
@@ -169,5 +176,67 @@ model EventLog {
   @@index([eventType])
   @@index([processed])
   @@map("event_logs")
+}
+
+// Recently Viewed Products - Track user product views
+model RecentlyViewedProduct {
+  id        String   @id @default(cuid())
+  userId    String
+  user      UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  
+  productId String   // Reference to product-service product ID
+  productName String? // Denormalized for quick display
+  productImageUrl String?
+  productPrice Decimal? @db.Decimal(10, 2)
+  
+  viewedAt  DateTime @default(now())
+  
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+  @@index([userId, viewedAt])
+  @@map("recently_viewed_products")
+}
+
+// User Activity - Track all user actions
+model UserActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  user      UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  
+  activityType String // 'product_viewed', 'product_searched', 'wishlist_added', 'address_added', etc.
+  entityType   String? // 'product', 'order', 'address', etc.
+  entityId     String? // ID of the entity
+  metadata     Json?   // Additional activity data
+  
+  ipAddress  String?
+  userAgent String?
+  createdAt  DateTime @default(now())
+  
+  @@index([userId])
+  @@index([activityType])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@map("user_activities")
+}
+
+// Notification Preferences - Granular notification settings
+model NotificationPreference {
+  id        String   @id @default(cuid())
+  userId    String
+  user      UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  
+  channel   String   // 'email', 'sms', 'push'
+  category  String   // 'orders', 'promotions', 'reviews', 'security', 'wishlist', etc.
+  enabled   Boolean  @default(true)
+  frequency String?  // 'realtime', 'daily', 'weekly', 'never'
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, channel, category])
+  @@index([userId])
+  @@index([channel])
+  @@map("notification_preferences")
 }
 

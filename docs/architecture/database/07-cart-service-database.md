@@ -5,7 +5,7 @@
 **Database Name**: `cart_db`  
 **Service**: Cart Service  
 **Purpose**: Shopping cart management, cart items, cart persistence  
-**Technology**: PostgreSQL 15+  
+**Technology**: PostgreSQL 16+  
 **ORM**: Prisma
 
 ---

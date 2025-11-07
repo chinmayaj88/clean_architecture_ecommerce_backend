@@ -6,6 +6,9 @@ import { IRoleRepository } from '../ports/interfaces/IRoleRepository';
 import { IPasswordResetTokenRepository } from '../ports/interfaces/IPasswordResetTokenRepository';
 import { IEmailVerificationTokenRepository } from '../ports/interfaces/IEmailVerificationTokenRepository';
 import { ISecurityAuditLogRepository } from '../ports/interfaces/ISecurityAuditLogRepository';
+import { IDeviceRepository } from '../ports/interfaces/IDeviceRepository';
+import { ILoginHistoryRepository } from '../ports/interfaces/ILoginHistoryRepository';
+import { IUserSessionRepository } from '../ports/interfaces/IUserSessionRepository';
 import { IPasswordHasher } from '../ports/interfaces/IPasswordHasher';
 import { ITokenService } from '../ports/interfaces/ITokenService';
 import { IEventPublisher } from '../ports/interfaces/IEventPublisher';
@@ -16,6 +19,9 @@ import { PrismaRoleRepository } from '../infrastructure/database/PrismaRoleRepos
 import { PrismaPasswordResetTokenRepository } from '../infrastructure/database/PrismaPasswordResetTokenRepository';
 import { PrismaEmailVerificationTokenRepository } from '../infrastructure/database/PrismaEmailVerificationTokenRepository';
 import { PrismaSecurityAuditLogRepository } from '../infrastructure/database/PrismaSecurityAuditLogRepository';
+import { PrismaDeviceRepository } from '../infrastructure/database/PrismaDeviceRepository';
+import { PrismaLoginHistoryRepository } from '../infrastructure/database/PrismaLoginHistoryRepository';
+import { PrismaUserSessionRepository } from '../infrastructure/database/PrismaUserSessionRepository';
 import { BcryptPasswordHasher } from '../infrastructure/password/BcryptPasswordHasher';
 import { JwtTokenService } from '../infrastructure/token/JwtTokenService';
 import { MockEventPublisher } from '../infrastructure/events/MockEventPublisher';
@@ -33,8 +39,20 @@ import { VerifyEmailUseCase } from '../core/use-cases/VerifyEmailUseCase';
 import { ResendVerificationEmailUseCase } from '../core/use-cases/ResendVerificationEmailUseCase';
 import { ChangePasswordUseCase } from '../core/use-cases/ChangePasswordUseCase';
 import { DeactivateAccountUseCase } from '../core/use-cases/DeactivateAccountUseCase';
+import { GetDevicesUseCase } from '../core/use-cases/GetDevicesUseCase';
+import { UpdateDeviceUseCase } from '../core/use-cases/UpdateDeviceUseCase';
+import { RevokeDeviceUseCase } from '../core/use-cases/RevokeDeviceUseCase';
+import { GetLoginHistoryUseCase } from '../core/use-cases/GetLoginHistoryUseCase';
+import { GetSessionsUseCase } from '../core/use-cases/GetSessionsUseCase';
+import { RevokeSessionUseCase } from '../core/use-cases/RevokeSessionUseCase';
+import { RevokeAllSessionsUseCase } from '../core/use-cases/RevokeAllSessionsUseCase';
+import { EnableMFAUseCase } from '../core/use-cases/EnableMFAUseCase';
+import { VerifyMFAUseCase } from '../core/use-cases/VerifyMFAUseCase';
+import { DisableMFAUseCase } from '../core/use-cases/DisableMFAUseCase';
+import { DetectSuspiciousLoginUseCase } from '../core/use-cases/DetectSuspiciousLoginUseCase';
 
 import { AuthController } from '../application/controllers/AuthController';
+import { SecurityController } from '../application/controllers/SecurityController';
 
 export class Container {
   private static instance: Container;
@@ -45,6 +63,9 @@ export class Container {
   private passwordResetTokenRepository: IPasswordResetTokenRepository;
   private emailVerificationTokenRepository: IEmailVerificationTokenRepository;
   private securityAuditLogRepository: ISecurityAuditLogRepository;
+  private deviceRepository: IDeviceRepository;
+  private loginHistoryRepository: ILoginHistoryRepository;
+  private userSessionRepository: IUserSessionRepository;
   private passwordHasher: IPasswordHasher;
   private tokenService: ITokenService;
   private eventPublisher: IEventPublisher;
@@ -58,7 +79,19 @@ export class Container {
   private resendVerificationEmailUseCase: ResendVerificationEmailUseCase;
   private changePasswordUseCase: ChangePasswordUseCase;
   private deactivateAccountUseCase: DeactivateAccountUseCase;
+  private getDevicesUseCase: GetDevicesUseCase;
+  private updateDeviceUseCase: UpdateDeviceUseCase;
+  private revokeDeviceUseCase: RevokeDeviceUseCase;
+  private getLoginHistoryUseCase: GetLoginHistoryUseCase;
+  private getSessionsUseCase: GetSessionsUseCase;
+  private revokeSessionUseCase: RevokeSessionUseCase;
+  private revokeAllSessionsUseCase: RevokeAllSessionsUseCase;
+  private enableMFAUseCase: EnableMFAUseCase;
+  private verifyMFAUseCase: VerifyMFAUseCase;
+  private disableMFAUseCase: DisableMFAUseCase;
+  private detectSuspiciousLoginUseCase: DetectSuspiciousLoginUseCase;
   private authController: AuthController;
+  private securityController: SecurityController;
 
   private constructor() {
     const envConfig = getEnvironmentConfig();
@@ -78,6 +111,9 @@ export class Container {
     this.passwordResetTokenRepository = new PrismaPasswordResetTokenRepository(this.prisma);
     this.emailVerificationTokenRepository = new PrismaEmailVerificationTokenRepository(this.prisma);
     this.securityAuditLogRepository = new PrismaSecurityAuditLogRepository(this.prisma);
+    this.deviceRepository = new PrismaDeviceRepository(this.prisma);
+    this.loginHistoryRepository = new PrismaLoginHistoryRepository(this.prisma);
+    this.userSessionRepository = new PrismaUserSessionRepository(this.prisma);
 
     this.passwordHasher = new BcryptPasswordHasher();
     this.tokenService = new JwtTokenService();
@@ -143,6 +179,24 @@ export class Container {
       this.eventPublisher
     );
 
+    this.getDevicesUseCase = new GetDevicesUseCase(this.deviceRepository);
+    this.updateDeviceUseCase = new UpdateDeviceUseCase(this.deviceRepository);
+    this.revokeDeviceUseCase = new RevokeDeviceUseCase(
+      this.deviceRepository,
+      this.userSessionRepository
+    );
+    this.getLoginHistoryUseCase = new GetLoginHistoryUseCase(this.loginHistoryRepository);
+    this.getSessionsUseCase = new GetSessionsUseCase(this.userSessionRepository);
+    this.revokeSessionUseCase = new RevokeSessionUseCase(this.userSessionRepository);
+    this.revokeAllSessionsUseCase = new RevokeAllSessionsUseCase(this.userSessionRepository);
+    this.enableMFAUseCase = new EnableMFAUseCase(this.userRepository, this.tokenService);
+    this.verifyMFAUseCase = new VerifyMFAUseCase(this.userRepository);
+    this.disableMFAUseCase = new DisableMFAUseCase(this.userRepository);
+    this.detectSuspiciousLoginUseCase = new DetectSuspiciousLoginUseCase(
+      this.loginHistoryRepository,
+      this.deviceRepository
+    );
+
     // Initialize controllers
     this.authController = new AuthController(
       this.registerUserUseCase,
@@ -156,6 +210,20 @@ export class Container {
       this.changePasswordUseCase,
       this.deactivateAccountUseCase
     );
+
+    this.securityController = new SecurityController(
+      this.getDevicesUseCase,
+      this.updateDeviceUseCase,
+      this.revokeDeviceUseCase,
+      this.getLoginHistoryUseCase,
+      this.getSessionsUseCase,
+      this.revokeSessionUseCase,
+      this.revokeAllSessionsUseCase,
+      this.enableMFAUseCase,
+      this.verifyMFAUseCase,
+      this.disableMFAUseCase,
+      this.detectSuspiciousLoginUseCase
+    );
   }
 
   public static getInstance(): Container {
@@ -168,6 +236,10 @@ export class Container {
   // Getters
   public getAuthController(): AuthController {
     return this.authController;
+  }
+
+  public getSecurityController(): SecurityController {
+    return this.securityController;
   }
 
   public getTokenService(): ITokenService {
