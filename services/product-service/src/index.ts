@@ -9,6 +9,12 @@ import timeout from 'connect-timeout';
 import { getEnvConfig } from './config/env';
 import { Container } from './di/container';
 import { createProductRoutes } from './routes/product.routes';
+import { createCategoryRoutes } from './routes/category.routes';
+import { createProductVariantRoutes } from './routes/product-variant.routes';
+import { createProductVariantDirectRoutes } from './routes/product-variant-direct.routes';
+import { createProductImageRoutes } from './routes/product-image.routes';
+import { createProductTagRoutes } from './routes/product-tag.routes';
+import { createProductInventoryRoutes } from './routes/product-inventory.routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.middleware';
 import { requestIdMiddleware } from './middleware/requestId.middleware';
 import { createLogger } from './infrastructure/logging/logger';
@@ -156,8 +162,25 @@ try {
 }
 
 const container = Container.getInstance();
+const categoryRoutes = createCategoryRoutes(container.getCategoryController());
 const productRoutes = createProductRoutes(container.getProductController());
+const productVariantRoutes = createProductVariantRoutes(container.getProductVariantController());
+const productVariantDirectRoutes = createProductVariantDirectRoutes(container.getProductVariantController());
+const productImageRoutes = createProductImageRoutes(container.getProductImageController());
+const productTagRoutes = createProductTagRoutes(container.getProductTagController());
+const productInventoryRoutes = createProductInventoryRoutes(container.getProductInventoryController());
+
+// Register routes in order of specificity
+// Direct variant routes (by ID) - for service-to-service communication (must come before nested routes)
+app.use('/api/v1/products/variants', productVariantDirectRoutes);
+// Nested routes (by productId)
+app.use('/api/v1/products/:productId/variants', productVariantRoutes);
+app.use('/api/v1/products/:productId/images', productImageRoutes);
+app.use('/api/v1/products/:productId/tags', productTagRoutes);
+app.use('/api/v1/products/:productId/inventory', productInventoryRoutes);
+// Main product routes (must come last to avoid conflicts)
 app.use('/api/v1/products', productRoutes);
+app.use('/api/v1/categories', categoryRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

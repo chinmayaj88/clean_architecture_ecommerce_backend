@@ -18,6 +18,8 @@ import { ModerateReviewUseCase } from '../../core/use-cases/ModerateReviewUseCas
 import { CreateProductComparisonUseCase } from '../../core/use-cases/CreateProductComparisonUseCase';
 import { GetProductComparisonUseCase } from '../../core/use-cases/GetProductComparisonUseCase';
 import { UpdateProductBadgesUseCase } from '../../core/use-cases/UpdateProductBadgesUseCase';
+import { GetPriceHistoryUseCase } from '../../core/use-cases/PriceHistoryUseCases';
+import { GetSearchHistoryUseCase } from '../../core/use-cases/ProductSearchHistoryUseCases';
 import { AuthenticatedRequest } from '../../middleware/auth.middleware';
 import {
   sendSuccess,
@@ -46,7 +48,9 @@ export class ProductController {
     private readonly moderateReviewUseCase: ModerateReviewUseCase,
     private readonly createProductComparisonUseCase: CreateProductComparisonUseCase,
     private readonly getProductComparisonUseCase: GetProductComparisonUseCase,
-    private readonly updateProductBadgesUseCase: UpdateProductBadgesUseCase
+    private readonly updateProductBadgesUseCase: UpdateProductBadgesUseCase,
+    private readonly getPriceHistoryUseCase: GetPriceHistoryUseCase,
+    private readonly getSearchHistoryUseCase: GetSearchHistoryUseCase
   ) {}
 
   async create(req: Request, res: Response): Promise<void> {
@@ -527,6 +531,46 @@ export class ProductController {
       } else {
         sendBadRequest(res, 'Failed to delete product', error instanceof Error ? error.message : undefined);
       }
+    }
+  }
+
+  async getPriceHistory(req: Request, res: Response): Promise<void> {
+    try {
+      const productId = req.params.id;
+      const limit = req.query.limit ? Number(req.query.limit) : 50;
+
+      const history = await this.getPriceHistoryUseCase.execute(productId, limit);
+      sendSuccess(res, 'Price history retrieved successfully', { history });
+    } catch (error: any) {
+      sendBadRequest(res, error.message || 'Failed to retrieve price history');
+    }
+  }
+
+  async getSearchHistory(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as AuthenticatedRequest).user?.userId;
+      const limit = req.query.limit ? Number(req.query.limit) : 50;
+
+      if (userId) {
+        const history = await this.getSearchHistoryUseCase.executeByUserId(userId, limit);
+        sendSuccess(res, 'Search history retrieved successfully', { history });
+      } else {
+        const popular = await this.getSearchHistoryUseCase.executePopularQueries(limit);
+        sendSuccess(res, 'Popular searches retrieved successfully', { queries: popular });
+      }
+    } catch (error: any) {
+      sendBadRequest(res, error.message || 'Failed to retrieve search history');
+    }
+  }
+
+  async getPopularSearches(req: Request, res: Response): Promise<void> {
+    try {
+      const limit = req.query.limit ? Number(req.query.limit) : 10;
+
+      const popular = await this.getSearchHistoryUseCase.executePopularQueries(limit);
+      sendSuccess(res, 'Popular searches retrieved successfully', { queries: popular });
+    } catch (error: any) {
+      sendBadRequest(res, error.message || 'Failed to retrieve popular searches');
     }
   }
 }

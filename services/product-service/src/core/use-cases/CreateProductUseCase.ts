@@ -1,8 +1,12 @@
 import { IProductRepository } from '../../ports/interfaces/IProductRepository';
+import { IEventPublisher, ProductCreatedEvent } from '../../ports/interfaces/IEventPublisher';
 import { Product } from '../../core/entities/Product';
 
 export class CreateProductUseCase {
-  constructor(private productRepository: IProductRepository) {}
+  constructor(
+    private productRepository: IProductRepository,
+    private eventPublisher?: IEventPublisher
+  ) {}
 
   async execute(data: {
     sku: string;
@@ -64,6 +68,22 @@ export class CreateProductUseCase {
       searchCount: 0,
       publishedAt: data.status === 'active' ? new Date() : null,
     });
+
+    // Publish product created event
+    if (this.eventPublisher) {
+      const event: ProductCreatedEvent = {
+        productId: product.id,
+        sku: product.sku,
+        name: product.name,
+        price: product.price,
+        status: product.status,
+        timestamp: new Date().toISOString(),
+        source: 'product-service',
+      };
+      this.eventPublisher.publish('product.created', event).catch((error) => {
+        console.error('Failed to publish product.created event:', error);
+      });
+    }
 
     return product;
   }

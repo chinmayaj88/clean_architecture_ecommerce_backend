@@ -246,6 +246,42 @@ export function createProductRoutes(controller: ProductController): Router {
     }
   );
 
+  // Price History Routes
+  router.get(
+    '/:id/price-history',
+    productRateLimiter,
+    validate([
+      query('limit').optional().isInt({ min: 1, max: 100 }),
+    ]),
+    (req, res, next) => {
+      controller.getPriceHistory(req, res).catch(next);
+    }
+  );
+
+  // Search History Routes
+  router.get(
+    '/search-history',
+    productRateLimiter,
+    authenticate(),
+    validate([
+      query('limit').optional().isInt({ min: 1, max: 100 }),
+    ]),
+    (req, res, next) => {
+      controller.getSearchHistory(req, res).catch(next);
+    }
+  );
+
+  router.get(
+    '/search-history/popular',
+    productRateLimiter,
+    validate([
+      query('limit').optional().isInt({ min: 1, max: 50 }),
+    ]),
+    (req, res, next) => {
+      controller.getPopularSearches(req, res).catch(next);
+    }
+  );
+
   return router;
 }
 

@@ -270,6 +270,18 @@ export function createProxyRoutes(): Router {
     })
   );
 
+  // Categories proxy (public, cacheable)
+  router.use(
+    '/api/v1/categories',
+    conditionalAuth,
+    createServiceProxy('product-service', config.PRODUCT_SERVICE_URL, {
+      '^/api/v1/categories': '/api/v1/categories',
+    }, {
+      cacheable: true,
+      cacheTTL: 300000, // 5 minutes cache for categories (they don't change often)
+    })
+  );
+
   // Cart service proxy (requires auth for user carts, supports guest carts)
   router.use(
     '/api/v1/carts',

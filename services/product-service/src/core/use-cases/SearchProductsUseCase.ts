@@ -4,10 +4,14 @@
  */
 
 import { IProductRepository } from '../../ports/interfaces/IProductRepository';
+import { IProductSearchHistoryRepository } from '../../ports/interfaces/IProductSearchHistoryRepository';
 import { Product } from '../../core/entities/Product';
 
 export class SearchProductsUseCase {
-  constructor(private readonly productRepository: IProductRepository) {}
+  constructor(
+    private readonly productRepository: IProductRepository,
+    private readonly searchHistoryRepository?: IProductSearchHistoryRepository
+  ) {}
 
   async execute(
     query: string,
@@ -31,6 +35,20 @@ export class SearchProductsUseCase {
       page,
       limit,
     });
+
+    // Track search history (fire and forget)
+    if (this.searchHistoryRepository) {
+      this.searchHistoryRepository.create({
+        query,
+        filters: filters || null,
+        resultsCount: result.total,
+        userId: null, // Could be passed from auth context
+        productId: null,
+      }).catch((error) => {
+        // Log error but don't fail the search
+        console.error('Failed to track search history:', error);
+      });
+    }
 
     return {
       products: result.products,
