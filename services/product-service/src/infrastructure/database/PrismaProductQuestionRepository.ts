@@ -63,7 +63,7 @@ export class PrismaProductQuestionRepository implements IProductQuestionReposito
       skip: options?.offset,
     });
 
-    return questions.map((q) => this.mapToEntity(q));
+    return questions.map((q: any) => this.mapToEntity(q));
   }
 
   async countByProductId(

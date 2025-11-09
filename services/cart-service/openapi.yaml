@@ -1,0 +1,525 @@
+openapi: 3.0.0
+info:
+  title: Cart Service API
+  description: Shopping cart management service API
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:3004
+    description: Development server
+  - url: https://api.example.com
+    description: Production server
+
+tags:
+  - name: Carts
+    description: Cart management operations
+  - name: Cart Items
+    description: Cart item operations
+  - name: Health
+    description: Health check endpoints
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check if the service is healthy
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  service:
+                    type: string
+                    example: cart-service
+                  timestamp:
+                    type: string
+                    format: date-time
+                  checks:
+                    type: object
+                    properties:
+                      database:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            example: ok
+                          responseTime:
+                            type: number
+                            example: 5
+                      redis:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            example: ok
+                          responseTime:
+                            type: number
+                            example: 2
+
+  /ready:
+    get:
+      tags:
+        - Health
+      summary: Readiness check
+      description: Check if the service is ready to accept traffic
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ready:
+                    type: boolean
+                    example: true
+                  service:
+                    type: string
+                    example: cart-service
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/carts:
+    post:
+      tags:
+        - Carts
+      summary: Create cart
+      description: Create a new shopping cart (for authenticated users or guests)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currency:
+                  type: string
+                  example: USD
+                  default: USD
+      responses:
+        '201':
+          description: Cart created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+    get:
+      tags:
+        - Carts
+      summary: Get cart
+      description: Get cart by ID, userId, or sessionId
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cartId
+          in: path
+          required: false
+          schema:
+            type: string
+          description: Cart ID (optional if userId or sessionId is available)
+      responses:
+        '200':
+          description: Cart retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/Cart'
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CartItem'
+        '404':
+          description: Cart not found
+
+  /api/v1/carts/{cartId}:
+    get:
+      tags:
+        - Carts
+      summary: Get cart by ID
+      description: Get a specific cart by its ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cart retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/Cart'
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CartItem'
+        '404':
+          description: Cart not found
+
+    delete:
+      tags:
+        - Carts
+      summary: Clear cart
+      description: Remove all items from cart
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cart cleared successfully
+        '404':
+          description: Cart not found
+
+  /api/v1/carts/{cartId}/items:
+    post:
+      tags:
+        - Cart Items
+      summary: Add item to cart
+      description: Add a product to the cart
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productId
+                - quantity
+              properties:
+                productId:
+                  type: string
+                  example: cm123abc
+                variantId:
+                  type: string
+                  example: cm456def
+                  nullable: true
+                quantity:
+                  type: integer
+                  minimum: 1
+                  maximum: 99
+                  example: 2
+                metadata:
+                  type: object
+                  example: {}
+      responses:
+        '201':
+          description: Item added to cart successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/CartItem'
+        '400':
+          description: Bad request
+        '404':
+          description: Cart or product not found
+
+  /api/v1/carts/{cartId}/items/{itemId}:
+    put:
+      tags:
+        - Cart Items
+      summary: Update cart item
+      description: Update the quantity of an item in the cart
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  maximum: 99
+                  example: 3
+      responses:
+        '200':
+          description: Item updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/CartItem'
+        '400':
+          description: Bad request
+        '404':
+          description: Cart or item not found
+
+    delete:
+      tags:
+        - Cart Items
+      summary: Remove item from cart
+      description: Remove an item from the cart
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item removed successfully
+        '404':
+          description: Cart or item not found
+
+  /api/v1/carts/merge:
+    post:
+      tags:
+        - Carts
+      summary: Merge carts
+      description: Merge guest cart with user cart (requires authentication)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - guestSessionId
+              properties:
+                guestSessionId:
+                  type: string
+                  example: session-123-abc
+      responses:
+        '200':
+          description: Carts merged successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Cart'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Cart:
+      type: object
+      properties:
+        id:
+          type: string
+          example: cm123abc
+        userId:
+          type: string
+          nullable: true
+          example: cm456def
+        sessionId:
+          type: string
+          nullable: true
+          example: session-123-abc
+        status:
+          type: string
+          enum: [active, abandoned, converted]
+          example: active
+        currency:
+          type: string
+          example: USD
+        subtotal:
+          type: number
+          format: decimal
+          example: 99.99
+        taxAmount:
+          type: number
+          format: decimal
+          example: 9.99
+        shippingAmount:
+          type: number
+          format: decimal
+          example: 10.00
+        discountAmount:
+          type: number
+          format: decimal
+          example: 0.00
+        totalAmount:
+          type: number
+          format: decimal
+          example: 119.98
+        couponCode:
+          type: string
+          nullable: true
+          example: SAVE10
+        metadata:
+          type: object
+          nullable: true
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        convertedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: cm789ghi
+        cartId:
+          type: string
+          example: cm123abc
+        productId:
+          type: string
+          example: cm456def
+        variantId:
+          type: string
+          nullable: true
+          example: cm789jkl
+        productName:
+          type: string
+          example: Product Name
+        productSku:
+          type: string
+          example: SKU-123
+        productImageUrl:
+          type: string
+          nullable: true
+          example: https://example.com/image.jpg
+        unitPrice:
+          type: number
+          format: decimal
+          example: 49.99
+        quantity:
+          type: integer
+          example: 2
+        totalPrice:
+          type: number
+          format: decimal
+          example: 99.98
+        metadata:
+          type: object
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CartResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Cart'
+        requestId:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Error message
+        requestId:
+          type: string
+        error:
+          type: string
+          nullable: true
+

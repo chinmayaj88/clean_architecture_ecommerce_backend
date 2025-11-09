@@ -57,6 +57,10 @@ export class CreateProductUseCase {
       metaTitle: data.metaTitle || null,
       metaDescription: data.metaDescription || null,
       attributes: data.attributes || null,
+      badges: data.badges || [],
+      viewCount: 0,
+      purchaseCount: 0,
+      searchCount: 0,
       publishedAt: data.status === 'active' ? new Date() : null,
     });
 

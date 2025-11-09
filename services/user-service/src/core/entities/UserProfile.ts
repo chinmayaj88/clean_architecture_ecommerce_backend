@@ -54,5 +54,6 @@ export interface UpdateUserProfileData {
   preferredLanguage?: string;
   newsletterSubscribed?: boolean;
   marketingOptIn?: boolean;
+  profileCompletionScore?: number;
 }
 

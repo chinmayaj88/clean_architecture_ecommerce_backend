@@ -1,50 +1,115 @@
 openapi: 3.0.3
 info:
   title: Gateway Service API
-  description: API Gateway for routing requests to microservices
+  description: API Gateway for routing requests to microservices. All requests are proxied to the appropriate backend service.
   version: 1.0.0
 
 servers:
-  - url: http://localhost:3000/api/v1
+  - url: http://localhost:3000
     description: Local development server
 
 paths:
-  /auth/{path}:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the gateway service
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: string
+                  service:
+                    type: string
+                  timestamp:
+                    type: string
+
+  /ready:
+    get:
+      summary: Readiness check
+      description: Returns the readiness status of the gateway service
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ready:
+                    type: boolean
+                  service:
+                    type: string
+                  timestamp:
+                    type: string
+
+  /api/v1/auth/{path}:
     get:
       summary: Proxy to auth-service
+      description: Routes requests to the authentication service
       parameters:
         - name: path
           in: path
           required: true
           schema:
             type: string
+          description: Auth service endpoint path
       responses:
         '200':
-          description: Proxied response
+          description: Proxied response from auth-service
+        '401':
+          description: Unauthorized
+        '503':
+          description: Service unavailable
 
-  /users/{path}:
+  /api/v1/users/{path}:
     get:
       summary: Proxy to user-service
+      description: Routes requests to the user service (requires authentication)
+      security:
+        - bearerAuth: []
       parameters:
         - name: path
           in: path
           required: true
           schema:
             type: string
+          description: User service endpoint path
       responses:
         '200':
-          description: Proxied response
+          description: Proxied response from user-service
+        '401':
+          description: Unauthorized
+        '503':
+          description: Service unavailable
 
-  /products/{path}:
+  /api/v1/products/{path}:
     get:
       summary: Proxy to product-service
+      description: Routes requests to the product service (most routes are public)
       parameters:
         - name: path
           in: path
           required: true
           schema:
             type: string
+          description: Product service endpoint path
       responses:
         '200':
-          description: Proxied response
+          description: Proxied response from product-service
+        '503':
+          description: Service unavailable
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 

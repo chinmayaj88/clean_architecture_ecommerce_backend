@@ -14,12 +14,12 @@ import { INotificationPreferenceRepository } from '../../ports/interfaces/INotif
 export class DeleteUserDataUseCase {
   constructor(
     private readonly userProfileRepository: IUserProfileRepository,
-    private readonly addressRepository: IAddressRepository,
-    private readonly paymentMethodRepository: IPaymentMethodRepository,
-    private readonly wishlistItemRepository: IWishlistItemRepository,
+    private readonly _addressRepository: IAddressRepository, // Used via cascade delete
+    private readonly _paymentMethodRepository: IPaymentMethodRepository, // Used via cascade delete
+    private readonly _wishlistItemRepository: IWishlistItemRepository, // Used via cascade delete
     private readonly recentlyViewedProductRepository: IRecentlyViewedProductRepository,
-    private readonly userActivityRepository: IUserActivityRepository,
-    private readonly notificationPreferenceRepository: INotificationPreferenceRepository
+    private readonly _userActivityRepository: IUserActivityRepository, // Used via cascade delete
+    private readonly _notificationPreferenceRepository: INotificationPreferenceRepository // Used via cascade delete
   ) {}
 
   async execute(userId: string): Promise<void> {

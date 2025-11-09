@@ -17,7 +17,6 @@ export function createRateLimiter(options?: {
   max?: number;
   message?: string;
 }) {
-  const config = getEnvConfig();
   const cache = getCache();
   const redisClient = cache.getClient();
 
@@ -29,14 +28,17 @@ export function createRateLimiter(options?: {
     legacyHeaders: false,
   };
 
-  // Use Redis store if Redis is available (rate-limit-redis v5 API)
+  // Use Redis store if Redis is available (rate-limit-redis v4 API)
   if (redisClient && cache.isAvailable()) {
-    rateLimiterOptions.store = new RedisStore({
-      sendCommand: async (...args: string[]) => {
-        return (redisClient as any).call(...args);
-      },
-      prefix: 'rl:user:',
-    });
+    try {
+      rateLimiterOptions.store = new (RedisStore as any)({
+        client: redisClient,
+        prefix: 'rl:user:',
+      });
+    } catch (error) {
+      // Fallback to in-memory if Redis store fails
+      console.warn('Failed to initialize Redis store for rate limiting, using in-memory store');
+    }
   }
 
   return rateLimit(rateLimiterOptions);

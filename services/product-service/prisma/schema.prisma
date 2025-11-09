@@ -53,7 +53,7 @@ model Product {
   questions         ProductQuestion[]
   stockAlerts       StockAlert[]
   recentlyViewed    RecentlyViewedProduct[]
-  comparisons       ProductComparison[]
+  // comparisons relation removed - ProductComparison uses productIds array instead
   priceHistory      PriceHistory[]
   searchHistory     ProductSearchHistory[]
 
@@ -61,7 +61,7 @@ model Product {
   @@index([price])
   @@index([status])
   @@index([isVisible])
-  @@fulltext([name, description, shortDescription])
+  // Full-text search is handled at application level for PostgreSQL
   @@map("products")
 }
 
@@ -121,7 +121,7 @@ model ProductVariant {
 
   // Relations
   product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  inventory      ProductInventory?
+  inventory      ProductInventory[]
 
   @@index([productId])
   @@map("product_variants")
@@ -158,7 +158,7 @@ model ProductInventory {
 
   // Relations
   product          Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variant          ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  variant          ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@unique([productId, variantId])
   @@index([productId])

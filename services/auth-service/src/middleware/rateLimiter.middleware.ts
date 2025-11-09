@@ -29,12 +29,10 @@ export function createRateLimiter(options?: {
     legacyHeaders: false,
   };
 
-  // Use Redis store if Redis is available (rate-limit-redis v5 API)
+  // Use Redis store if Redis is available (rate-limit-redis v4 API)
   if (redisClient && cache.isAvailable()) {
     rateLimiterOptions.store = new RedisStore({
-      sendCommand: async (...args: string[]) => {
-        return (redisClient as any).call(...args);
-      },
+      client: redisClient,
       prefix: 'rl:',
     });
   }

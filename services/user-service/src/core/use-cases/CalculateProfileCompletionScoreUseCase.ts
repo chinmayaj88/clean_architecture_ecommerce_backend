@@ -81,7 +81,7 @@ export class CalculateProfileCompletionScoreUseCase {
     hasAddress: boolean,
     hasPaymentMethod: boolean
   ): number {
-    const baseScore = this.calculateScore(profile);
+    let baseScore = this.calculateScore(profile);
     
     if (hasAddress) baseScore += 20;
     if (hasPaymentMethod) baseScore += 10;

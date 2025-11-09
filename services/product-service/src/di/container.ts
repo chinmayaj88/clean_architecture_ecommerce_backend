@@ -65,7 +65,7 @@ export class Container {
 
   private constructor() {
     const envConfig = getEnvironmentConfig();
-    const dbConfig = envConfig.getDatabaseConfig();
+    // const dbConfig = envConfig.getDatabaseConfig(); // Not used currently
     
     this.prisma = new PrismaClient({
       log: envConfig.isDevelopment() 

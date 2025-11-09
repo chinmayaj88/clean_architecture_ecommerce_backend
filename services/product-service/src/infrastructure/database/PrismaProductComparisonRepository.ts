@@ -43,7 +43,7 @@ export class PrismaProductComparisonRepository implements IProductComparisonRepo
       orderBy: { updatedAt: 'desc' },
     });
 
-    return comparisons.map((c) => this.mapToEntity(c));
+    return comparisons.map((c: any) => this.mapToEntity(c));
   }
 
   async update(id: string, updates: Partial<ProductComparison>): Promise<ProductComparison> {
@@ -90,7 +90,7 @@ export class PrismaProductComparisonRepository implements IProductComparisonRepo
       const comparisonIds = comparison.productIds.sort();
       const searchIds = [...new Set(productIds)].sort();
       if (comparisonIds.length === searchIds.length && 
-          comparisonIds.every((id, idx) => id === searchIds[idx])) {
+          comparisonIds.every((id: string, idx: number) => id === searchIds[idx])) {
         return this.mapToEntity(comparison);
       }
     }

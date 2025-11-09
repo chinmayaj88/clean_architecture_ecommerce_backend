@@ -78,7 +78,7 @@ export class PrismaProductReviewRepository implements IProductReviewRepository {
       skip: options?.offset,
     });
 
-    return reviews.map((r) => this.mapToEntity(r));
+    return reviews.map((r: any) => this.mapToEntity(r));
   }
 
   async countByProductId(
@@ -127,7 +127,7 @@ export class PrismaProductReviewRepository implements IProductReviewRepository {
     });
 
     const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    reviews.forEach((review) => {
+    reviews.forEach((review: any) => {
       distribution[review.rating] = (distribution[review.rating] || 0) + 1;
     });
 
@@ -171,7 +171,7 @@ export class PrismaProductReviewRepository implements IProductReviewRepository {
       take: limit,
     });
 
-    return reviews.map((r) => this.mapToEntity(r));
+    return reviews.map((r: any) => this.mapToEntity(r));
   }
 
   private mapToEntity(review: any): ProductReview {

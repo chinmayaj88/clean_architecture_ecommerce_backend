@@ -144,7 +144,7 @@ export class ProductController {
     try {
       const productId = req.params.id;
       await this.trackProductViewUseCase.execute(productId);
-      sendSuccess(res, 'Product view tracked successfully');
+      sendSuccess(res, 'Product view tracked successfully', undefined);
     } catch (error) {
       sendBadRequest(res, 'Failed to track product view', error instanceof Error ? error.message : undefined);
     }
@@ -360,10 +360,10 @@ export class ProductController {
 
       if (action === 'approve') {
         await this.moderateReviewUseCase.approve(reviewId);
-        sendSuccess(res, 'Review approved successfully');
+        sendSuccess(res, 'Review approved successfully', undefined);
       } else if (action === 'reject') {
         await this.moderateReviewUseCase.reject(reviewId);
-        sendSuccess(res, 'Review rejected successfully');
+        sendSuccess(res, 'Review rejected successfully', undefined);
       } else {
         sendBadRequest(res, 'Invalid action. Use "approve" or "reject"');
       }
@@ -520,7 +520,7 @@ export class ProductController {
   async delete(req: Request, res: Response): Promise<void> {
     try {
       await this.deleteProductUseCase.execute(req.params.id);
-      sendSuccess(res, 'Product deleted successfully');
+      sendSuccess(res, 'Product deleted successfully', undefined);
     } catch (error) {
       if (error instanceof Error && error.message === 'Product not found') {
         sendNotFound(res, error.message);

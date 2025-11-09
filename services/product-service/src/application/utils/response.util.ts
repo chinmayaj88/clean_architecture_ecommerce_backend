@@ -16,9 +16,9 @@ export interface ErrorResponse {
 
 export function sendSuccess<T>(
   res: Response,
-  statusCode: number = 200,
   message: string,
-  data?: T
+  data?: T,
+  statusCode: number = 200
 ): void {
   const response: ApiResponse<T> = {
     success: true,

@@ -31,6 +31,10 @@ export class PrismaProductRepository implements IProductRepository {
         metaTitle: data.metaTitle,
         metaDescription: data.metaDescription,
         attributes: data.attributes,
+        badges: data.badges,
+        viewCount: data.viewCount,
+        purchaseCount: data.purchaseCount,
+        searchCount: data.searchCount,
         publishedAt: data.publishedAt,
       },
     });
@@ -130,7 +134,10 @@ export class PrismaProductRepository implements IProductRepository {
         where.stockStatus = 'in_stock';
         where.stockQuantity = { gt: 0 };
       } else {
+        // Merge with existing OR conditions if any
+        const existingOR = where.OR || [];
         where.OR = [
+          ...existingOR,
           { stockStatus: 'out_of_stock' },
           { stockQuantity: { lte: 0 } },
         ];
@@ -178,7 +185,7 @@ export class PrismaProductRepository implements IProductRepository {
     ]);
 
     return {
-      products: products.map((p) => this.mapToEntity(p)),
+      products: products.map((p: any) => this.mapToEntity(p)),
       total,
     };
   }
@@ -320,7 +327,7 @@ export class PrismaProductRepository implements IProductRepository {
     ]);
 
     return {
-      products: products.map((p) => this.mapToEntity(p)),
+      products: products.map((p: any) => this.mapToEntity(p)),
       total,
     };
   }
@@ -337,7 +344,7 @@ export class PrismaProductRepository implements IProductRepository {
     }
 
     // Get products from same category, excluding current product
-    const categoryIds = product.categories.map((c) => c.categoryId);
+    const categoryIds = product.categories.map((c: any) => c.categoryId);
 
     const recommendations = await this.prisma.product.findMany({
       where: {
@@ -357,7 +364,7 @@ export class PrismaProductRepository implements IProductRepository {
       take: limit,
     });
 
-    return recommendations.map((p) => this.mapToEntity(p));
+    return recommendations.map((p: any) => this.mapToEntity(p));
   }
 
   async getRelatedProducts(productId: string, categoryId?: string, limit = 10): Promise<Product[]> {
@@ -382,7 +389,7 @@ export class PrismaProductRepository implements IProductRepository {
       take: limit,
     });
 
-    return related.map((p) => this.mapToEntity(p));
+    return related.map((p: any) => this.mapToEntity(p));
   }
 
   async incrementViewCount(productId: string): Promise<void> {

@@ -45,7 +45,7 @@ export class PrismaStockAlertRepository implements IStockAlertRepository {
       orderBy: { createdAt: 'desc' },
     });
 
-    return alerts.map((a) => this.mapToEntity(a));
+    return alerts.map((a: any) => this.mapToEntity(a));
   }
 
   async findByUserId(userId: string): Promise<StockAlert[]> {
@@ -57,7 +57,7 @@ export class PrismaStockAlertRepository implements IStockAlertRepository {
       orderBy: { createdAt: 'desc' },
     });
 
-    return alerts.map((a) => this.mapToEntity(a));
+    return alerts.map((a: any) => this.mapToEntity(a));
   }
 
   async findUnnotifiedByProductId(productId: string, variantId?: string): Promise<StockAlert[]> {
@@ -70,7 +70,7 @@ export class PrismaStockAlertRepository implements IStockAlertRepository {
       },
     });
 
-    return alerts.map((a) => this.mapToEntity(a));
+    return alerts.map((a: any) => this.mapToEntity(a));
   }
 
   async markAsNotified(id: string): Promise<void> {
