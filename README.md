@@ -41,23 +41,6 @@ This is a monorepo containing **Core E-Commerce Services** that work together to
 
 See [Environment Configuration](./docs/environment-configuration.md) for details.
 
-**Implemented Services:**
-- **auth-service** ✅ - Authentication, authorization, JWT, RBAC, MFA/TOTP, Device Management, Login History, Session Management, Suspicious Login Detection
-- **user-service** ✅ - User profiles, addresses, payment methods, wishlist, Recently Viewed Products, Activity Tracking, Profile Completion, Notification Preferences, GDPR Compliance
-- **product-service** ✅ - Product catalog, Advanced Search, Recommendations, Q&A, Review Moderation, Stock Alerts, Product Comparisons, Badges
-
-**Services to Implement:**
-- **order-service** 🚧 - Order management
-- **payment-service** 🚧 - Payment processing
-- **cart-service** 🚧 - Shopping cart
-- **discount-service** 🚧 - Coupons & promotions
-- **shipping-service** 🚧 - Shipping & tracking
-- **return-service** 🚧 - Returns & refunds
-- **notification-service** 🚧 - Email/SMS notifications
-- **gateway-service** 🚧 - API gateway
-
-**Note**: Analytics, Recommendation, and Search services are maintained in a separate repository (`analytics-platform`) to keep this repo fast and focused. See [Repository Organization](./docs/architecture/REPOSITORY_ORGANIZATION.md) for details.
-
 Each service follows **Clean Architecture** with clear separation between:
 - **Core**: Business logic (entities, use cases)
 - **Application**: Controllers, DTOs
@@ -82,7 +65,7 @@ Each service follows **Clean Architecture** with clear separation between:
 - npm >= 10.0.0
 - Make for Windows ([GnuWin32](http://gnuwin32.sourceforge.net/packages/make.htm) or use WSL)
 
-**Note:** Environment variables (`.env` files) will be provided by your team lead. Ensure you have the required `.env` files before proceeding.
+**Note:** Ensure you have the required `.env` files before proceeding.
 
 ### Step 1: Install Dependencies
 
@@ -93,7 +76,7 @@ npm install
 
 ### Step 2: Set Up Environment Variables
 
-**Important:** Before proceeding, ensure you have received the `.env` files from your team lead and placed them in:
+**Important:** Before proceeding, ensure you have received the `.env` files and placed them in:
 - `services/auth-service/.env`
 - `services/user-service/.env`
 
@@ -299,7 +282,7 @@ make studio-auth     # Open Prisma Studio for auth DB
 
 ### Environment Variables
 
-**Important:** Environment variables are provided by your team lead. Each service requires a `.env` file:
+**Important:** Each service requires a `.env` file:
 - `services/auth-service/.env` - Contains database URL, JWT secrets, Redis URL, AWS config, etc.
 - `services/user-service/.env` - Contains database URL, auth service URL, Redis URL, etc.
 
