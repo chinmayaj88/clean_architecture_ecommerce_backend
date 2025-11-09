@@ -1,5 +1,5 @@
 
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { getMetricsCollector } from '../infrastructure/metrics/MetricsCollector';
 import { RequestWithId } from './requestId.middleware';
 
@@ -13,8 +13,8 @@ export function metricsMiddleware(req: RequestWithId, res: Response, next: NextF
   const serviceName = getServiceNameFromPath(req.path);
 
   // Override res.end to capture response time
-  const originalEnd = res.end;
-  res.end = function (chunk?: any, encoding?: any) {
+  const originalEnd = res.end.bind(res);
+  res.end = function (chunk?: any, encoding?: any, cb?: any): Response {
     const responseTime = Date.now() - startTime;
 
     metricsCollector.recordRequest({
@@ -27,7 +27,13 @@ export function metricsMiddleware(req: RequestWithId, res: Response, next: NextF
     });
 
     // Call original end
-    originalEnd.call(res, chunk, encoding);
+    if (typeof cb === 'function') {
+      return originalEnd(chunk, encoding, cb);
+    } else if (typeof encoding === 'function') {
+      return originalEnd(chunk, encoding);
+    } else {
+      return originalEnd(chunk, encoding);
+    }
   };
 
   next();

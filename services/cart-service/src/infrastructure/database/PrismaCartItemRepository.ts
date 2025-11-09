@@ -17,14 +17,14 @@ export class PrismaCartItemRepository implements ICartItemRepository {
       data: {
         cartId: item.cartId,
         productId: item.productId,
-        variantId: item.variantId,
+        variantId: item.variantId || null,
         productName: item.productName,
         productSku: item.productSku,
         productImageUrl: item.productImageUrl,
         unitPrice: item.unitPrice,
         quantity: item.quantity,
         totalPrice: item.totalPrice,
-        metadata: item.metadata,
+        metadata: item.metadata || undefined,
       },
     });
 
@@ -71,15 +71,17 @@ export class PrismaCartItemRepository implements ICartItemRepository {
     productId: string,
     variantId?: string | null
   ): Promise<CartItem | null> {
+    // Prisma requires explicit null for optional fields in unique constraints
+    // Use undefined if variantId is not provided, null if explicitly null
     const item = await this.prisma.cartItem.findUnique({
       where: {
         cartId_productId_variantId: {
           cartId,
           productId,
-          variantId: variantId || null,
+          variantId: variantId ?? null,
         },
       },
-    });
+    } as any);
 
     if (!item) {
       return null;

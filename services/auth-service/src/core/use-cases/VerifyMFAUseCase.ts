@@ -11,17 +11,17 @@ export class VerifyMFAUseCase {
 
   async execute(userId: string, code: string): Promise<{ valid: boolean; isBackupCode: boolean }> {
     const user = await this.userRepository.findById(userId);
-    if (!user || !user.mfaEnabled) {
+    if (!user || !user.mfaEnabled || !user.mfaSecret) {
       throw new Error('MFA not enabled for user');
     }
 
     // Try TOTP verification first
-    if (this.verifyTOTP(code, (user as any).mfaSecret)) {
+    if (this.verifyTOTP(code, user.mfaSecret)) {
       return { valid: true, isBackupCode: false };
     }
 
     // Try backup code verification
-    const backupCodes = (user as any).mfaBackupCodes || [];
+    const backupCodes = user.mfaBackupCodes || [];
     const hashedCode = crypto.createHash('sha256').update(code).digest('hex');
     
     if (backupCodes.includes(hashedCode)) {
@@ -51,8 +51,8 @@ export class VerifyMFAUseCase {
 
   private generateTOTP(secret: string, time: number): string {
     // Simplified TOTP generation
-    // In production, use a proper TOTP library
-    const key = Buffer.from(secret, 'base32');
+    // In production, use a proper TOTP library like 'otplib'
+    const key = this.base32Decode(secret);
     const timeBuffer = Buffer.allocUnsafe(8);
     timeBuffer.writeUInt32BE(Math.floor(time), 4);
     
@@ -68,6 +68,29 @@ export class VerifyMFAUseCase {
     
     const otp = binary % 1000000;
     return otp.toString().padStart(6, '0');
+  }
+
+  private base32Decode(encoded: string): Buffer {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let bits = 0;
+    let value = 0;
+    const output: number[] = [];
+
+    for (let i = 0; i < encoded.length; i++) {
+      const char = encoded[i].toUpperCase();
+      const index = alphabet.indexOf(char);
+      if (index === -1) continue;
+
+      value = (value << 5) | index;
+      bits += 5;
+
+      while (bits >= 8) {
+        output.push((value >>> (bits - 8)) & 0xff);
+        bits -= 8;
+      }
+    }
+
+    return Buffer.from(output);
   }
 }
 

@@ -95,7 +95,7 @@ export class Container {
 
   private constructor() {
     const envConfig = getEnvironmentConfig();
-    const dbConfig = envConfig.getDatabaseConfig();
+    // const dbConfig = envConfig.getDatabaseConfig(); // Not used currently
     
     this.prisma = new PrismaClient({
       log: envConfig.isDevelopment() 
@@ -189,7 +189,7 @@ export class Container {
     this.getSessionsUseCase = new GetSessionsUseCase(this.userSessionRepository);
     this.revokeSessionUseCase = new RevokeSessionUseCase(this.userSessionRepository);
     this.revokeAllSessionsUseCase = new RevokeAllSessionsUseCase(this.userSessionRepository);
-    this.enableMFAUseCase = new EnableMFAUseCase(this.userRepository, this.tokenService);
+    this.enableMFAUseCase = new EnableMFAUseCase(this.userRepository);
     this.verifyMFAUseCase = new VerifyMFAUseCase(this.userRepository);
     this.disableMFAUseCase = new DisableMFAUseCase(this.userRepository);
     this.detectSuspiciousLoginUseCase = new DetectSuspiciousLoginUseCase(

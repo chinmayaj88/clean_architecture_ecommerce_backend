@@ -7,7 +7,7 @@ import { IUserRepository } from '../../ports/interfaces/IUserRepository';
 export class DisableMFAUseCase {
   constructor(private readonly userRepository: IUserRepository) {}
 
-  async execute(userId: string, password: string): Promise<void> {
+  async execute(userId: string, _password: string): Promise<void> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new Error('User not found');
@@ -19,7 +19,7 @@ export class DisableMFAUseCase {
       mfaEnabled: false,
       mfaSecret: null,
       mfaBackupCodes: [],
-    } as any);
+    });
   }
 }
 

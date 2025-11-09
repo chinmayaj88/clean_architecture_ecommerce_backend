@@ -57,7 +57,7 @@ export class PrismaAddressRepository implements IAddressRepository {
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
 
-    return addresses.map((a) => this.mapToEntity(a));
+    return addresses.map((a: any) => this.mapToEntity(a));
   }
 
   async findByUserIdAndType(userId: string, type: 'shipping' | 'billing' | 'both'): Promise<Address[]> {
@@ -69,7 +69,7 @@ export class PrismaAddressRepository implements IAddressRepository {
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
 
-    return addresses.map((a) => this.mapToEntity(a));
+    return addresses.map((a: any) => this.mapToEntity(a));
   }
 
   async findDefaultByUserId(userId: string, type: 'shipping' | 'billing'): Promise<Address | null> {

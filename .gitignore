@@ -62,3 +62,4 @@ aws-exports.js
 .prettierignore
 .eslintcache
 
+docs

@@ -174,12 +174,7 @@ export class Container {
     );
     this.deleteUserDataUseCase = new DeleteUserDataUseCase(
       this.userProfileRepository,
-      this.addressRepository,
-      this.paymentMethodRepository,
-      this.wishlistItemRepository,
-      this.recentlyViewedProductRepository,
-      this.userActivityRepository,
-      this.notificationPreferenceRepository
+      this.recentlyViewedProductRepository
     );
     this.handleUserCreatedEventUseCase = new HandleUserCreatedEventUseCase(this.userProfileRepository);
 

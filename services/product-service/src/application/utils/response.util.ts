@@ -51,7 +51,7 @@ export function sendCreated<T>(
   message: string,
   data?: T
 ): void {
-  sendSuccess(res, 201, message, data);
+  sendSuccess(res, message, data, 201);
 }
 
 export function sendNoContent(res: Response): void {

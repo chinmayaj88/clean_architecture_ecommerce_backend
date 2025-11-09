@@ -21,7 +21,7 @@ export class DetectSuspiciousLoginUseCase {
   async execute(
     userId: string,
     ipAddress: string,
-    userAgent: string,
+    _userAgent: string,
     deviceId: string
   ): Promise<SuspiciousLoginDetection> {
     const reasons: string[] = [];

@@ -55,7 +55,7 @@ export class PrismaUserSessionRepository implements IUserSessionRepository {
       orderBy: { lastActivityAt: 'desc' },
     });
 
-    return sessions.map((s) => this.mapToEntity(s));
+    return sessions.map((s: any) => this.mapToEntity(s));
   }
 
   async findByUserId(userId: string): Promise<UserSession[]> {
@@ -64,7 +64,7 @@ export class PrismaUserSessionRepository implements IUserSessionRepository {
       orderBy: { lastActivityAt: 'desc' },
     });
 
-    return sessions.map((s) => this.mapToEntity(s));
+    return sessions.map((s: any) => this.mapToEntity(s));
   }
 
   async update(id: string, updates: Partial<UserSession>): Promise<UserSession> {

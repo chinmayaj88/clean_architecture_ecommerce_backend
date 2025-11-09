@@ -6,6 +6,9 @@ export interface User {
   isActive: boolean;
   failedLoginAttempts?: number;
   lockedUntil?: Date | null;
+  mfaEnabled?: boolean;
+  mfaSecret?: string | null;
+  mfaBackupCodes?: string[];
   createdAt: Date;
   updatedAt: Date;
 }

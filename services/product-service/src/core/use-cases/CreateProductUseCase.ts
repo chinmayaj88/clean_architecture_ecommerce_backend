@@ -24,6 +24,7 @@ export class CreateProductUseCase {
     metaTitle?: string;
     metaDescription?: string;
     attributes?: Record<string, any>;
+    badges?: string[];
   }): Promise<Product> {
     // Check if SKU already exists
     const existingBySku = await this.productRepository.findBySku(data.sku);

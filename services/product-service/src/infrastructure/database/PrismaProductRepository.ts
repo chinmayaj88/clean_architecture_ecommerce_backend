@@ -30,8 +30,8 @@ export class PrismaProductRepository implements IProductRepository {
         height: data.height,
         metaTitle: data.metaTitle,
         metaDescription: data.metaDescription,
-        attributes: data.attributes,
-        badges: data.badges,
+        attributes: data.attributes || undefined,
+        badges: data.badges || undefined,
         viewCount: data.viewCount,
         purchaseCount: data.purchaseCount,
         searchCount: data.searchCount,
@@ -86,6 +86,9 @@ export class PrismaProductRepository implements IProductRepository {
     search?: string;
     minPrice?: number;
     maxPrice?: number;
+    inStock?: boolean;
+    badges?: string[];
+    sortBy?: 'price_asc' | 'price_desc' | 'rating' | 'newest' | 'popularity' | 'name';
     page?: number;
     limit?: number;
   }): Promise<{ products: Product[]; total: number }> {
@@ -211,8 +214,8 @@ export class PrismaProductRepository implements IProductRepository {
         ...(updates.height !== undefined && { height: updates.height }),
         ...(updates.metaTitle !== undefined && { metaTitle: updates.metaTitle }),
         ...(updates.metaDescription !== undefined && { metaDescription: updates.metaDescription }),
-        ...(updates.attributes !== undefined && { attributes: updates.attributes }),
-        ...((updates as any).badges !== undefined && { badges: (updates as any).badges }),
+        ...(updates.attributes !== undefined && { attributes: updates.attributes || undefined }),
+        ...((updates as any).badges !== undefined && { badges: (updates as any).badges || undefined }),
         ...(updates.publishedAt !== undefined && { publishedAt: updates.publishedAt }),
       },
     });

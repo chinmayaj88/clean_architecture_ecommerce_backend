@@ -48,7 +48,7 @@ export class SecurityController {
         includeInactive
       );
 
-      sendSuccess(res, { devices }, 'Devices retrieved successfully');
+      sendSuccess(res, 200, 'Devices retrieved successfully', { devices });
     } catch (error: any) {
       sendBadRequest(res, error.message);
     }
@@ -67,7 +67,7 @@ export class SecurityController {
         isTrusted,
       });
 
-      sendSuccess(res, { device }, 'Device updated successfully');
+      sendSuccess(res, 200, 'Device updated successfully', { device });
     } catch (error: any) {
       if (error.message === 'Device not found' || error.message === 'Unauthorized') {
         sendNotFound(res, error.message);
@@ -86,7 +86,7 @@ export class SecurityController {
 
       await this.revokeDeviceUseCase.execute(deviceId, req.user!.userId);
 
-      sendSuccess(res, {}, 'Device revoked successfully');
+      sendSuccess(res, 200, 'Device revoked successfully');
     } catch (error: any) {
       if (error.message === 'Device not found' || error.message === 'Unauthorized') {
         sendNotFound(res, error.message);
@@ -113,7 +113,7 @@ export class SecurityController {
         isSuspicious,
       });
 
-      sendSuccess(res, result, 'Login history retrieved successfully');
+      sendSuccess(res, 200, 'Login history retrieved successfully', result);
     } catch (error: any) {
       sendBadRequest(res, error.message);
     }
@@ -127,7 +127,7 @@ export class SecurityController {
       const activeOnly = req.query.activeOnly !== 'false';
       const sessions = await this.getSessionsUseCase.execute(req.user!.userId, activeOnly);
 
-      sendSuccess(res, { sessions }, 'Sessions retrieved successfully');
+      sendSuccess(res, 200, 'Sessions retrieved successfully', { sessions });
     } catch (error: any) {
       sendBadRequest(res, error.message);
     }
@@ -142,7 +142,7 @@ export class SecurityController {
 
       await this.revokeSessionUseCase.execute(sessionId, req.user!.userId);
 
-      sendSuccess(res, {}, 'Session revoked successfully');
+      sendSuccess(res, 200, 'Session revoked successfully');
     } catch (error: any) {
       if (error.message === 'Session not found' || error.message === 'Unauthorized') {
         sendNotFound(res, error.message);
@@ -161,7 +161,7 @@ export class SecurityController {
 
       await this.revokeAllSessionsUseCase.execute(req.user!.userId, currentSessionToken);
 
-      sendSuccess(res, {}, 'All sessions revoked successfully');
+      sendSuccess(res, 200, 'All sessions revoked successfully');
     } catch (error: any) {
       sendBadRequest(res, error.message);
     }
@@ -177,7 +177,7 @@ export class SecurityController {
 
       const result = await this.enableMFAUseCase.execute(userId, email);
 
-      sendSuccess(res, { ...result }, 'MFA enabled successfully. Save your backup codes securely.');
+      sendSuccess(res, 200, 'MFA enabled successfully. Save your backup codes securely.', { ...result });
     } catch (error: any) {
       sendBadRequest(res, error.message);
     }
@@ -198,7 +198,7 @@ export class SecurityController {
 
       const result = await this.verifyMFAUseCase.execute(userId, code);
 
-      sendSuccess(res, result, 'MFA code verified successfully');
+      sendSuccess(res, 200, 'MFA code verified successfully', result);
     } catch (error: any) {
       sendBadRequest(res, error.message);
     }
@@ -219,7 +219,7 @@ export class SecurityController {
 
       await this.disableMFAUseCase.execute(userId, password);
 
-      sendSuccess(res, {}, 'MFA disabled successfully');
+      sendSuccess(res, 200, 'MFA disabled successfully');
     } catch (error: any) {
       sendBadRequest(res, error.message);
     }
@@ -242,7 +242,7 @@ export class SecurityController {
         deviceId
       );
 
-      sendSuccess(res, detection, 'Suspicious login detection completed');
+      sendSuccess(res, 200, 'Suspicious login detection completed', detection);
     } catch (error: any) {
       sendBadRequest(res, error.message);
     }

@@ -5,7 +5,6 @@
 
 import rateLimit from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
-import { getEnvConfig } from '../config/env';
 import { getCache } from '../infrastructure/cache/RedisCache';
 
 /**

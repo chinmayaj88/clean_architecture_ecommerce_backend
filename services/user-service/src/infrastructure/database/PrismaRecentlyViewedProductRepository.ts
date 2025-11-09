@@ -40,7 +40,7 @@ export class PrismaRecentlyViewedProductRepository implements IRecentlyViewedPro
       take: limit,
     });
 
-    return views.map((v) => this.mapToEntity(v));
+    return views.map((v: any) => this.mapToEntity(v));
   }
 
   async deleteOldViews(userId: string, daysToKeep = 30): Promise<number> {

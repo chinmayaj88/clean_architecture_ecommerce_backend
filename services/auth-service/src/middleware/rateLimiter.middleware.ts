@@ -31,10 +31,15 @@ export function createRateLimiter(options?: {
 
   // Use Redis store if Redis is available (rate-limit-redis v4 API)
   if (redisClient && cache.isAvailable()) {
-    rateLimiterOptions.store = new RedisStore({
-      client: redisClient,
-      prefix: 'rl:',
-    });
+    try {
+      rateLimiterOptions.store = new (RedisStore as any)({
+        client: redisClient,
+        prefix: 'rl:',
+      });
+    } catch (error) {
+      // Fallback to in-memory if Redis store fails
+      console.warn('Failed to initialize Redis store for rate limiting, using in-memory store');
+    }
   }
 
   return rateLimit(rateLimiterOptions);

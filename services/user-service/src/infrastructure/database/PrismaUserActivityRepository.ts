@@ -16,7 +16,7 @@ export class PrismaUserActivityRepository implements IUserActivityRepository {
         activityType: data.activityType,
         entityType: data.entityType,
         entityId: data.entityId,
-        metadata: data.metadata ? JSON.stringify(data.metadata) : null,
+        metadata: data.metadata || undefined,
         ipAddress: data.ipAddress,
         userAgent: data.userAgent,
       },
@@ -51,7 +51,7 @@ export class PrismaUserActivityRepository implements IUserActivityRepository {
       skip: options?.offset,
     });
 
-    return activities.map((a) => this.mapToEntity(a));
+    return activities.map((a: any) => this.mapToEntity(a));
   }
 
   async countByUserId(
@@ -97,7 +97,7 @@ export class PrismaUserActivityRepository implements IUserActivityRepository {
     const activitiesByType: Record<string, number> = {};
     const activitiesByDay: Record<string, number> = {};
 
-    activities.forEach((activity) => {
+    activities.forEach((activity: any) => {
       // Count by type
       activitiesByType[activity.activityType] = (activitiesByType[activity.activityType] || 0) + 1;
 
@@ -130,7 +130,7 @@ export class PrismaUserActivityRepository implements IUserActivityRepository {
       activityType: activity.activityType,
       entityType: activity.entityType,
       entityId: activity.entityId,
-      metadata: activity.metadata ? JSON.parse(activity.metadata) : null,
+      metadata: activity.metadata || undefined,
       ipAddress: activity.ipAddress,
       userAgent: activity.userAgent,
       createdAt: activity.createdAt,

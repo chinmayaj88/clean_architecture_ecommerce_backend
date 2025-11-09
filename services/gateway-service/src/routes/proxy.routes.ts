@@ -1,5 +1,5 @@
 
-import { Router, Response, NextFunction, Request, Handler } from 'express';
+import { Router, Response, NextFunction, Request } from 'express';
 import { createProxyMiddleware, Options } from 'http-proxy-middleware';
 import { getEnvConfig } from '../config/env';
 import { authenticate, optionalAuth, AuthenticatedRequest } from '../middleware/auth.middleware';

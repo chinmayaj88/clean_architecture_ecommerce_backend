@@ -27,7 +27,7 @@ export class PrismaCartRepository implements ICartRepository {
         discountAmount: cart.discountAmount,
         totalAmount: cart.totalAmount,
         couponCode: cart.couponCode,
-        metadata: cart.metadata,
+        metadata: cart.metadata || undefined,
         expiresAt: cart.expiresAt,
         convertedAt: cart.convertedAt,
       },

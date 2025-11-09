@@ -1,4 +1,4 @@
-.PHONY: help build test lint format dev dev-down clean install generate-prisma migrate-auth migrate-user migrate-product migrate-all seed-auth seed-user seed-product seed-all setup-auth setup-user setup-all studio-auth studio-user studio-product test-auth test-user test-product
+.PHONY: help build build-auth build-user build-product build-cart build-gateway test lint format dev dev-down clean install generate-prisma migrate-auth migrate-user migrate-product migrate-all seed-auth seed-user seed-product seed-all setup-auth setup-user setup-all studio-auth studio-user studio-product test-auth test-user test-product
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -9,18 +9,57 @@ help: ## Show this help message
 install: ## Install all dependencies
 	npm install
 
-generate-prisma: ## Generate Prisma clients for all services
+generate-prisma: ## Generate Prisma clients for all services (for setup/development)
 	@echo "Generating Prisma clients for all services..."
+	@echo "⚠️  Note: In a monorepo, Prisma clients overwrite each other in shared node_modules."
+	@echo "   For individual service builds (recommended for microservices), use:"
+	@echo "   - make build-auth   (generates client + builds auth-service)"
+	@echo "   - make build-user   (generates client + builds user-service)"
+	@echo "   - make build-product (generates client + builds product-service)"
+	@echo "   - make build-cart    (generates client + builds cart-service)"
+	@echo "   This ensures each service builds with its own Prisma client."
 	cd services/auth-service && npm run prisma:generate
 	cd services/user-service && npm run prisma:generate
+	cd services/product-service && npm run prisma:generate
 	cd services/cart-service && npm run prisma:generate
 	@echo "✅ All Prisma clients generated"
 
-build: ## Build all services
-	$(MAKE) generate-prisma
-	npm run build
+build: ## Build all services (generates Prisma clients and builds each service individually)
+	@echo "Building all services..."
+	@echo "Note: Each service generates its own Prisma client before building to avoid conflicts"
+	@echo "This approach works because each service builds immediately after generating its client"
+	cd services/auth-service && npm run prisma:generate && npm run build
+	cd services/user-service && npm run prisma:generate && npm run build
+	cd services/product-service && npm run prisma:generate && npm run build
+	cd services/cart-service && npm run prisma:generate && npm run build
 	cd services/gateway-service && npm run build
-	cd services/cart-service && npm run build
+	cd services/notification-service && npm run build
+	@echo "✅ All services built successfully"
+
+build-auth: ## Build auth-service individually (microservice pattern)
+	@echo "Building auth-service..."
+	cd services/auth-service && npm run prisma:generate && npm run build
+	@echo "✅ Auth-service built successfully"
+
+build-user: ## Build user-service individually (microservice pattern)
+	@echo "Building user-service..."
+	cd services/user-service && npm run prisma:generate && npm run build
+	@echo "✅ User-service built successfully"
+
+build-product: ## Build product-service individually (microservice pattern)
+	@echo "Building product-service..."
+	cd services/product-service && npm run prisma:generate && npm run build
+	@echo "✅ Product-service built successfully"
+
+build-cart: ## Build cart-service individually (microservice pattern)
+	@echo "Building cart-service..."
+	cd services/cart-service && npm run prisma:generate && npm run build
+	@echo "✅ Cart-service built successfully"
+
+build-gateway: ## Build gateway-service individually (microservice pattern)
+	@echo "Building gateway-service..."
+	cd services/gateway-service && npm run build
+	@echo "✅ Gateway-service built successfully"
 
 test: ## Run all tests
 	npm run test
@@ -76,9 +115,10 @@ migrate-user: ## Run user-service database migrations
 	cd services/user-service && npm run prisma:generate && npm run prisma:migrate:deploy
 	@echo "✅ User-service migrations completed"
 
-migrate-product: ## Run product-service database migrations (when implemented)
+migrate-product: ## Run product-service database migrations
 	@echo "Running migrations for product-service..."
-	@echo "⚠️  Product service migrations not yet implemented"
+	cd services/product-service && npm run prisma:generate && npm run prisma:migrate:deploy
+	@echo "✅ Product-service migrations completed"
 
 migrate-cart: ## Run cart-service database migrations
 	@echo "Running migrations for cart-service..."
@@ -87,8 +127,10 @@ migrate-cart: ## Run cart-service database migrations
 
 migrate-all: ## Run migrations for all services
 	@echo "Running migrations for all services..."
+	@echo "Note: Each service generates its Prisma client before migrating to avoid conflicts"
 	$(MAKE) migrate-auth
 	$(MAKE) migrate-user
+	$(MAKE) migrate-product
 	$(MAKE) migrate-cart
 	@echo "✅ All migrations completed"
 
@@ -181,10 +223,17 @@ endif
 
 setup-all: ## Complete setup for all services (migrate + seed)
 	@echo "Setting up all service databases..."
+	@echo "Note: Each service generates its Prisma client individually during setup"
+	@echo "This ensures database migrations work correctly for each service"
 	$(MAKE) setup-auth
 	$(MAKE) setup-user
 	$(MAKE) setup-cart
 	@echo "✅ All service databases setup complete"
+	@echo ""
+	@echo "💡 Tip: When building services individually (as microservices should be),"
+	@echo "   each service will generate its Prisma client before building, avoiding conflicts."
+	@echo "   Use 'make build-auth', 'make build-user', etc. for individual service builds."
+	@echo "   Individual builds are recommended for microservices architecture."
 
 # Prisma Studio (database GUI)
 studio-auth: ## Open Prisma Studio for auth-service

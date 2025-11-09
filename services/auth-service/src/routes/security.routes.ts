@@ -9,15 +9,16 @@ import { SecurityController } from '../application/controllers/SecurityControlle
 import { validate } from '../middleware/validator.middleware';
 import { authRateLimiter } from '../middleware/rateLimiter.middleware';
 import { authenticate } from '../middleware/auth.middleware';
+import { ITokenService } from '../ports/interfaces/ITokenService';
 
 /**
  * Create security routes
  */
-export function createSecurityRoutes(controller: SecurityController): Router {
+export function createSecurityRoutes(controller: SecurityController, tokenService: ITokenService): Router {
   const router = Router();
 
   // All routes require authentication
-  router.use(authenticate());
+  router.use(authenticate(tokenService));
   router.use(authRateLimiter);
 
   /**

@@ -4,22 +4,14 @@
  */
 
 import { IUserProfileRepository } from '../../ports/interfaces/IUserProfileRepository';
-import { IAddressRepository } from '../../ports/interfaces/IAddressRepository';
-import { IPaymentMethodRepository } from '../../ports/interfaces/IPaymentMethodRepository';
-import { IWishlistItemRepository } from '../../ports/interfaces/IWishlistItemRepository';
 import { IRecentlyViewedProductRepository } from '../../ports/interfaces/IRecentlyViewedProductRepository';
-import { IUserActivityRepository } from '../../ports/interfaces/IUserActivityRepository';
-import { INotificationPreferenceRepository } from '../../ports/interfaces/INotificationPreferenceRepository';
 
 export class DeleteUserDataUseCase {
   constructor(
     private readonly userProfileRepository: IUserProfileRepository,
-    private readonly _addressRepository: IAddressRepository, // Used via cascade delete
-    private readonly _paymentMethodRepository: IPaymentMethodRepository, // Used via cascade delete
-    private readonly _wishlistItemRepository: IWishlistItemRepository, // Used via cascade delete
-    private readonly recentlyViewedProductRepository: IRecentlyViewedProductRepository,
-    private readonly _userActivityRepository: IUserActivityRepository, // Used via cascade delete
-    private readonly _notificationPreferenceRepository: INotificationPreferenceRepository // Used via cascade delete
+    private readonly recentlyViewedProductRepository: IRecentlyViewedProductRepository
+    // Note: Other repositories (address, paymentMethod, wishlistItem, userActivity, notificationPreference)
+    // are deleted via cascade when userProfile is deleted
   ) {}
 
   async execute(userId: string): Promise<void> {

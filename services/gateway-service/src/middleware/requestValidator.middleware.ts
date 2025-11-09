@@ -1,5 +1,5 @@
 
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { createLogger } from '../infrastructure/logging/logger';
 import { RequestWithId } from './requestId.middleware';
 

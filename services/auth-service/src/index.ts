@@ -161,7 +161,7 @@ try {
 
 const container = Container.getInstance();
 const authRoutes = createAuthRoutes(container.getAuthController());
-const securityRoutes = createSecurityRoutes(container.getSecurityController());
+const securityRoutes = createSecurityRoutes(container.getSecurityController(), container.getTokenService());
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/security', securityRoutes);
 app.use(notFoundHandler);

@@ -4,7 +4,6 @@
  */
 
 import { IUserRepository } from '../../ports/interfaces/IUserRepository';
-import { ITokenService } from '../../ports/interfaces/ITokenService';
 import * as crypto from 'crypto';
 
 export interface MFAEnrollmentResult {
@@ -15,8 +14,7 @@ export interface MFAEnrollmentResult {
 
 export class EnableMFAUseCase {
   constructor(
-    private readonly userRepository: IUserRepository,
-    private readonly tokenService: ITokenService
+    private readonly userRepository: IUserRepository
   ) {}
 
   async execute(userId: string, email: string): Promise<MFAEnrollmentResult> {
@@ -34,7 +32,7 @@ export class EnableMFAUseCase {
       mfaEnabled: true,
       mfaSecret: secret, // In production, encrypt this
       mfaBackupCodes: hashedBackupCodes,
-    } as any);
+    });
 
     // Generate QR code URL for authenticator apps
     const qrCodeUrl = this.generateQRCodeUrl(email, secret);

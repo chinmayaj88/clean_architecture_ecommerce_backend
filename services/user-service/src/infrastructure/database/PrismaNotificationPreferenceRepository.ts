@@ -66,7 +66,7 @@ export class PrismaNotificationPreferenceRepository implements INotificationPref
       orderBy: [{ channel: 'asc' }, { category: 'asc' }],
     });
 
-    return preferences.map((p) => this.mapToEntity(p));
+    return preferences.map((p: any) => this.mapToEntity(p));
   }
 
   async findByUserIdAndChannel(userId: string, channel: string): Promise<NotificationPreference[]> {
@@ -78,7 +78,7 @@ export class PrismaNotificationPreferenceRepository implements INotificationPref
       orderBy: { category: 'asc' },
     });
 
-    return preferences.map((p) => this.mapToEntity(p));
+    return preferences.map((p: any) => this.mapToEntity(p));
   }
 
   async update(id: string, data: UpdateNotificationPreferenceData): Promise<NotificationPreference> {

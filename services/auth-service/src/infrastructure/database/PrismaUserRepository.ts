@@ -121,6 +121,9 @@ export class PrismaUserRepository implements IUserRepository {
         passwordHash: data.passwordHash,
         emailVerified: data.emailVerified,
         isActive: data.isActive,
+        mfaEnabled: data.mfaEnabled,
+        mfaSecret: data.mfaSecret,
+        mfaBackupCodes: data.mfaBackupCodes,
       },
     });
 
@@ -193,6 +196,9 @@ export class PrismaUserRepository implements IUserRepository {
     isActive: boolean;
     failedLoginAttempts: number | null;
     lockedUntil: Date | null;
+    mfaEnabled: boolean | null;
+    mfaSecret: string | null;
+    mfaBackupCodes: string[] | null;
     createdAt: Date;
     updatedAt: Date;
   }): User {
@@ -204,6 +210,9 @@ export class PrismaUserRepository implements IUserRepository {
       isActive: user.isActive,
       failedLoginAttempts: user.failedLoginAttempts ?? 0,
       lockedUntil: user.lockedUntil ?? undefined,
+      mfaEnabled: user.mfaEnabled ?? false,
+      mfaSecret: user.mfaSecret ?? undefined,
+      mfaBackupCodes: user.mfaBackupCodes ?? undefined,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
