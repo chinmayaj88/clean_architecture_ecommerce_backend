@@ -21,7 +21,7 @@ const config = getEnvConfig();
 
 const app = express();
 
-// Helmet v8 requires explicit configuration
+// Security headers
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -39,6 +39,7 @@ const corsOptions: cors.CorsOptions = {
   optionsSuccessStatus: 200,
 };
 
+// CORS setup - strict in production, open in dev
 if (config.NODE_ENV === 'production') {
   const allowedOrigins = config.ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()).filter(Boolean) || [];
   
@@ -55,6 +56,7 @@ if (config.NODE_ENV === 'production') {
     }
   };
 } else {
+  // Allow all origins in development
   corsOptions.origin = '*';
 }
 
@@ -81,6 +83,7 @@ app.use(express.json({ limit: `${maxRequestSizeMB}mb` }));
 app.use(express.urlencoded({ extended: true, limit: `${maxRequestSizeMB}mb` }));
 app.use(cookieParser());
 
+// Log all requests
 app.use((req, _res, next) => {
   logger.info(`${req.method} ${req.path}`, {
     requestId: req.id,
@@ -183,15 +186,17 @@ if (process.env.NODE_ENV !== 'test') {
 
 const shutdownTimeout = config.SHUTDOWN_TIMEOUT_MS;
 
+// Graceful shutdown handler
 async function gracefulShutdown(signal: string): Promise<void> {
   logger.info(`${signal} received, shutting down gracefully`);
 
   if (!server) {
-    // If server not started (e.g., in test mode), just exit
+    // Test mode or server not started
     process.exit(0);
     return;
   }
 
+  // Force exit if shutdown takes too long
   const shutdownTimer = setTimeout(() => {
     logger.error('Shutdown timeout reached, forcing exit');
     process.exit(1);
@@ -202,6 +207,7 @@ async function gracefulShutdown(signal: string): Promise<void> {
       logger.info('HTTP server closed');
 
       try {
+        // Clean up resources
         await container.dispose();
         logger.info('Container disposed');
 
@@ -219,6 +225,7 @@ async function gracefulShutdown(signal: string): Promise<void> {
       }
     });
 
+    // Backup timeout in case server.close hangs
     setTimeout(() => {
       logger.error('Server close timeout, forcing exit');
       clearTimeout(shutdownTimer);

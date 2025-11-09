@@ -197,7 +197,7 @@ export class Container {
       this.deviceRepository
     );
 
-    // Initialize controllers
+    // Set up controllers
     this.authController = new AuthController(
       this.registerUserUseCase,
       this.loginUseCase,
@@ -293,14 +293,12 @@ export class Container {
     return new MockEventPublisher();
   }
 
-  /**
-   * Cleanup resources (e.g., close DB connections)
-   */
+  // Clean up resources on shutdown
   public async dispose(): Promise<void> {
     try {
       await this.prisma.$disconnect();
     } catch (error) {
-      // Log but don't throw - we're shutting down
+      // Don't throw during shutdown
       const logger = createLogger();
       logger.error('Error disconnecting Prisma', { error });
     }

@@ -31,6 +31,7 @@ export class PrismaUserRepository implements IUserRepository {
     });
 
     const entity = this.mapToEntity(user);
+    // Invalidate cache
     await this.cache.delPattern(`user:email:${data.email}*`);
     await this.cache.delPattern(`user:id:${entity.id}*`);
     return entity;
@@ -124,6 +125,7 @@ export class PrismaUserRepository implements IUserRepository {
     });
 
     const entity = this.mapToEntity(user);
+    // Clear cached user data
     await this.cache.delPattern(`user:id:${id}*`);
     await this.cache.delPattern(`user:email:${user.email}*`);
     return entity;

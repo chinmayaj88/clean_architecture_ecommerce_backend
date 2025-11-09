@@ -1,6 +1,6 @@
 # E-Commerce Microservices Platform
 
-A production-ready microservices architecture demonstrating advanced software engineering principles, clean architecture, and SOLID design patterns.
+A microservices-based e-commerce platform I built to showcase my skills in system architecture and backend development. It uses clean architecture principles and follows SOLID design patterns throughout.
 
 ## 📑 Table of Contents
 
@@ -16,36 +16,36 @@ A production-ready microservices architecture demonstrating advanced software en
 
 ## 🎯 About This Project
 
-This project was built to showcase:
+I built this project to demonstrate my ability to architect and build a production-grade microservices system. Here's what I focused on:
 
-- **Architecting Skills**: Microservices design, event-driven architecture, service decomposition
-- **DSA Knowledge**: Efficient algorithms, data structures, and optimization patterns
-- **Clean Architecture**: Separation of concerns, dependency inversion, testability
-- **SOLID Principles**: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion
-- **Production Readiness**: Health checks, graceful shutdown, distributed caching, rate limiting, error handling
+- **Microservices Architecture**: Designed with service decomposition, event-driven communication, and independent deployment
+- **Clean Architecture**: Kept business logic separated from frameworks and infrastructure
+- **SOLID Principles**: Applied throughout the codebase for maintainability
+- **Production Features**: Added health checks, graceful shutdown, caching, rate limiting, and proper error handling
+- **Real-world Features**: Implemented features you'd see in actual e-commerce platforms like MFA, device management, session tracking, product recommendations, reviews, Q&A, and more
 
-**Tech Stack**: TypeScript, Node.js 22+, Express 4.21+, PostgreSQL 16+, Prisma 6.1+, Redis 7.4+, Docker, AWS SNS/SQS, LocalStack
+**Tech Stack**: TypeScript, Node.js 22+, Express, PostgreSQL 16+, Prisma, Redis, Docker, AWS SNS/SQS (with LocalStack for local dev)
 
-**Real-World Features**: This platform includes production-ready features similar to major e-commerce platforms including MFA/TOTP, device management, login history, session management, suspicious login detection, recently viewed products, activity tracking, profile completion, granular notification preferences, GDPR compliance, advanced search, product recommendations, Q&A, review moderation, stock alerts, product comparisons, and more.
+The platform includes features like MFA/TOTP authentication, device management, login history tracking, suspicious login detection, product recommendations, review systems with moderation, stock alerts, and GDPR compliance tools.
 
 ---
 
 ## 📋 Overview
 
-This is a monorepo containing **Core E-Commerce Services** that work together to form an e-commerce platform.
+This is a monorepo with multiple microservices that work together to form an e-commerce platform.
 
-**Environment Support**: The codebase automatically configures resources for three environments:
-- **Development** - Uses local resources (Docker, LocalStack)
-- **Staging** - Uses minimal cloud resources (cost-optimized)
-- **Production** - Uses full-scale cloud infrastructure
+**Environment Setup**: The code handles three environments automatically:
+- **Development** - Everything runs locally with Docker and LocalStack
+- **Staging** - Uses minimal cloud resources to keep costs down
+- **Production** - Full cloud infrastructure setup
 
-See [Environment Configuration](./docs/environment-configuration.md) for details.
+More details in the [Environment Configuration](./docs/environment-configuration.md) docs.
 
-Each service follows **Clean Architecture** with clear separation between:
-- **Core**: Business logic (entities, use cases)
-- **Application**: Controllers, DTOs
-- **Infrastructure**: Database, external services, caching
-- **Ports**: Interfaces (dependency inversion)
+Each service uses **Clean Architecture** with these layers:
+- **Core**: Pure business logic (entities, use cases) - no framework dependencies
+- **Application**: Controllers and request handling
+- **Infrastructure**: Database, caching, external services
+- **Ports**: Interfaces for dependency inversion
 
 ---
 
@@ -76,11 +76,11 @@ npm install
 
 ### Step 2: Set Up Environment Variables
 
-**Important:** Before proceeding, ensure you have received the `.env` files and placed them in:
+**Important:** Make sure you have the `.env` files set up in:
 - `services/auth-service/.env`
 - `services/user-service/.env`
 
-These files contain all required configuration including database URLs, API keys, and secrets.
+These contain database URLs, JWT secrets, Redis config, AWS credentials, etc. Check the service READMEs for what variables are needed.
 
 ### Step 3: Start Infrastructure Services
 
@@ -91,10 +91,10 @@ make dev
 
 This starts PostgreSQL databases, Redis, and LocalStack (AWS emulation) using Docker.
 
-**What happens:**
-- PostgreSQL containers for auth-service (port 5433) and user-service (port 5435)
-- Redis container (port 6379)
-- LocalStack container (port 4566) for AWS services emulation
+This starts up:
+- PostgreSQL databases (auth-service on 5433, user-service on 5435)
+- Redis cache (port 6379)
+- LocalStack for AWS emulation (port 4566)
 
 ### Step 4: Set Up Databases
 
@@ -110,10 +110,10 @@ make setup-auth  # Auth service database (migrations + seed)
 make setup-user  # User service database (migrations)
 ```
 
-**What happens:**
-- Prisma clients are generated
-- Database migrations are applied
-- Seed data is inserted (for auth-service)
+This will:
+- Generate Prisma clients
+- Run database migrations
+- Seed initial data (for auth-service)
 
 ### Step 5: Build All Services
 
@@ -122,7 +122,7 @@ make setup-user  # User service database (migrations)
 make build
 ```
 
-This automatically generates Prisma clients and compiles TypeScript for all services.
+This compiles all services and generates Prisma clients.
 
 ### Step 6: Start Services
 
@@ -238,23 +238,22 @@ ecommerce/
 
 ### Why This Structure?
 
-**Clean Architecture Layers**:
-- `core/` - Pure business logic, no framework dependencies
-- `application/` - Orchestrates use cases, framework-agnostic
-- `infrastructure/` - Framework-specific implementations (Prisma, Express)
-- `ports/` - Interfaces define contracts (Dependency Inversion Principle)
+I organized it this way to keep business logic separate from frameworks:
 
-**Benefits**:
-- ✅ Easy to test (mock interfaces)
-- ✅ Framework-independent business logic
-- ✅ Clear dependencies (inner layers don't depend on outer layers)
-- ✅ Easy to swap implementations (e.g., Prisma → TypeORM)
-- ✅ Team collaboration (clear boundaries)
+- `core/` - Business logic only, no Express/Prisma dependencies
+- `application/` - Controllers that orchestrate use cases
+- `infrastructure/` - Actual implementations (Prisma, Redis, etc.)
+- `ports/` - Interfaces that define contracts between layers
 
-**SOLID Principles**:
-- Single Responsibility: Each use case has one job
-- Open/Closed: Extend via interfaces, not modification
-- Dependency Inversion: Depend on abstractions (interfaces), not concrete classes
+**Why it helps:**
+- Easy to test - can mock interfaces instead of real databases
+- Business logic doesn't depend on Express or Prisma
+- Can swap out implementations (e.g., switch from Prisma to TypeORM) without touching core logic
+- Clear boundaries make it easier for teams to work in parallel
+
+**SOLID principles applied:**
+- Single Responsibility: Each use case does one thing
+- Dependency Inversion: Core depends on interfaces, not concrete classes
 
 ---
 
@@ -282,18 +281,17 @@ make studio-auth     # Open Prisma Studio for auth DB
 
 ### Environment Variables
 
-**Important:** Each service requires a `.env` file:
-- `services/auth-service/.env` - Contains database URL, JWT secrets, Redis URL, AWS config, etc.
-- `services/user-service/.env` - Contains database URL, auth service URL, Redis URL, etc.
+Each service needs its own `.env` file with database URLs, secrets, etc. Check the individual service directories for what's required.
 
-**Environment Configuration:**
-- Set `NODE_ENV=development|staging|production` to configure resources automatically
-- Development uses local resources (Docker, LocalStack)
-- Staging uses minimal cloud resources (cost-optimized)
-- Production uses full-scale cloud infrastructure
-- See [Environment Configuration](./docs/environment-configuration.md) for details
+**Environment modes:**
+- Set `NODE_ENV=development|staging|production` to switch between environments
+- Development = local Docker containers
+- Staging = minimal cloud setup (cheaper)
+- Production = full cloud infrastructure
 
-**Do not commit `.env` files to version control.** They contain sensitive information.
+See [Environment Configuration](./docs/environment-configuration.md) for all the details.
+
+**⚠️ Never commit `.env` files** - they have secrets!
 
 ### Health Checks
 
@@ -309,13 +307,13 @@ make studio-auth     # Open Prisma Studio for auth DB
 
 ## 🏗️ Architecture Highlights
 
-- **Event-Driven**: SNS/SQS for async communication
-- **Distributed Caching**: Redis for performance
-- **Rate Limiting**: Distributed rate limiting via Redis
-- **Connection Pooling**: Database connection management
-- **Graceful Shutdown**: Clean resource cleanup
-- **Request Tracking**: Request IDs for distributed tracing
-- **Structured Logging**: JSON logs for observability
+- **Event-Driven**: Services communicate asynchronously via SNS/SQS
+- **Caching**: Redis for performance (user data, sessions, etc.)
+- **Rate Limiting**: Distributed rate limiting using Redis
+- **Connection Pooling**: Prisma handles database connections
+- **Graceful Shutdown**: Properly cleans up connections on shutdown
+- **Request Tracing**: Request IDs for tracking requests across services
+- **Logging**: Structured JSON logs for easier debugging and monitoring
 
 ---
 
@@ -351,34 +349,26 @@ choco install make
 
 ---
 
-**Ready to build?** Start with `make setup-all` and you're good to go! 🚀
+Ready to go? Run `make setup-all` and you should be good! 🚀
 
 ---
 
 ## 📚 Development Documentation
 
-This repository is architected to enable **independent, parallel development** by multiple developers and teams. Each service follows **Clean Architecture** principles and can be developed, tested, and deployed independently.
+The architecture supports independent development - teams can work on different services without stepping on each other. Each service follows Clean Architecture and can be built, tested, and deployed separately.
 
-### Key Highlights
+### What's in the docs:
 
-- ✅ **Clean Architecture**: Framework-independent business logic
-- ✅ **SOLID Principles**: Applied throughout the codebase
-- ✅ **Independent Development**: Services can be developed in parallel without conflicts
-- ✅ **Domain-Driven Design**: Services organized around business capabilities
-- ✅ **Production Ready**: Health checks, monitoring, error handling, and more
+- **[Development Guide](./docs/development/01-development-guide.md)** - How to work with the codebase
+- **[Architecture Docs](./docs/architecture/README.md)** - System design and patterns
+- **[Database Docs](./docs/architecture/database/README.md)** - Database schemas and relationships
 
-### Documentation
+### What I focused on:
 
-- **[Development Guide](./docs/development/01-development-guide.md)** - Comprehensive guide on architecture, development practices, and team collaboration
-- **[Architecture Documentation](./docs/architecture/README.md)** - System architecture and design patterns
-- **[Database Documentation](./docs/architecture/database/README.md)** - Database design and schemas
+1. **Microservices**: Each service has its own database and communicates via events
+2. **Clean Architecture**: Business logic is framework-independent
+3. **SOLID Principles**: Applied throughout to keep things maintainable
+4. **Design Patterns**: Repository, Use Cases, DI, etc.
+5. **Production Features**: Health checks, logging, error handling, graceful shutdown
 
-### Architectural Skills Demonstrated
-
-1. **Microservices Architecture**: Service decomposition, database per service, event-driven communication
-2. **Clean Architecture**: Layer separation, dependency inversion, framework independence
-3. **SOLID Principles**: All five principles applied consistently
-4. **Design Patterns**: Repository, Use Case, Dependency Injection, Factory, Observer
-5. **Production Readiness**: Health checks, graceful shutdown, error handling, logging, monitoring
-
-See the [Development Guide](./docs/development/01-development-guide.md) for detailed information on how the repository enables independent development and showcases architectural excellence.
+Check out the [Development Guide](./docs/development/01-development-guide.md) for more details on the architecture and how to contribute.

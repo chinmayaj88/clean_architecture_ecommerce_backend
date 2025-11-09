@@ -1,6 +1,6 @@
 # Architecture Documentation
 
-Welcome to the Architecture Documentation for the E-Commerce Microservices Platform.
+This section documents the architecture of the e-commerce microservices platform.
 
 ## 📚 Documentation Index
 

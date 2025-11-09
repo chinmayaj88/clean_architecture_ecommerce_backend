@@ -21,7 +21,7 @@ const config = getEnvConfig();
 
 const app = express();
 
-// Helmet v8 requires explicit configuration
+// Security headers
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -39,6 +39,7 @@ const corsOptions: cors.CorsOptions = {
   optionsSuccessStatus: 200,
 };
 
+// CORS config - strict in prod, permissive in dev
 if (config.NODE_ENV === 'production') {
   const allowedOrigins = config.ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()).filter(Boolean) || [];
   
@@ -169,6 +170,7 @@ if (process.env.NODE_ENV !== 'test') {
       port: PORT,
     });
 
+    // Start consuming events from SQS
     try {
       await container.startEventConsumer();
       logger.info('Event consumer started');
@@ -184,6 +186,7 @@ if (process.env.NODE_ENV !== 'test') {
 
 const shutdownTimeout = config.SHUTDOWN_TIMEOUT_MS;
 
+// Handle graceful shutdown
 async function gracefulShutdown(signal: string): Promise<void> {
   logger.info(`${signal} received, shutting down gracefully`);
 
@@ -202,6 +205,7 @@ async function gracefulShutdown(signal: string): Promise<void> {
       logger.info('HTTP server closed');
 
       try {
+        // Cleanup
         await container.dispose();
         logger.info('Container disposed');
 
@@ -219,6 +223,7 @@ async function gracefulShutdown(signal: string): Promise<void> {
       }
     });
 
+    // Backup timeout
     setTimeout(() => {
       logger.error('Server close timeout, forcing exit');
       clearTimeout(shutdownTimer);

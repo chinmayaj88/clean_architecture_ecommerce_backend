@@ -19,8 +19,10 @@ export class LoginUseCase {
   async execute(request: LoginRequest & { ipAddress?: string; userAgent?: string }) {
     const config = getEnvConfig();
     
+    // Find user with roles
     const user = await this.userRepository.findByEmailWithRoles(request.email);
     if (!user) {
+      // Log failed attempt (don't reveal user doesn't exist)
       await this.securityAuditLogRepository.create({
         action: 'login_failed',
         ipAddress: request.ipAddress,
@@ -31,6 +33,7 @@ export class LoginUseCase {
       throw new Error('Invalid email or password');
     }
 
+    // Check if account is locked
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       await this.securityAuditLogRepository.create({
         userId: user.id,
@@ -56,14 +59,17 @@ export class LoginUseCase {
       throw new Error('Account is deactivated');
     }
 
+    // Verify password
     const isValid = await this.passwordHasher.compare(request.password, user.passwordHash);
     
     if (!isValid) {
+      // Increment failed attempts and check for lockout
       await this.userRepository.incrementFailedLoginAttempts(user.id);
       const updatedUser = await this.userRepository.findById(user.id);
       const failedAttempts = (updatedUser?.failedLoginAttempts ?? 0) + 1;
       
       if (failedAttempts >= config.MAX_LOGIN_ATTEMPTS) {
+        // Lock account after too many failed attempts
         const lockedUntil = new Date(Date.now() + config.LOCKOUT_DURATION_MINUTES * 60 * 1000);
         await this.userRepository.lockAccount(user.id, lockedUntil);
         
@@ -93,10 +99,12 @@ export class LoginUseCase {
       throw new Error('Invalid email or password');
     }
 
+    // Reset failed attempts on successful login
     if (user.failedLoginAttempts && user.failedLoginAttempts > 0) {
       await this.userRepository.resetFailedLoginAttempts(user.id);
     }
 
+    // Log successful login
     await this.securityAuditLogRepository.create({
       userId: user.id,
       action: 'login_success',
@@ -104,12 +112,14 @@ export class LoginUseCase {
       userAgent: request.userAgent,
     }).catch(() => {});
 
+    // Generate JWT tokens
     const tokens = await this.tokenService.generateTokens({
       userId: user.id,
       email: user.email,
       roles: user.roles,
     });
 
+    // Store refresh token
     const expiresInMs = this.parseExpiresIn(config.JWT_REFRESH_TOKEN_EXPIRES_IN);
     const expiresAt = new Date(Date.now() + expiresInMs * 1000);
 

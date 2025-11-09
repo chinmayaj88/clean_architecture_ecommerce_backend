@@ -1,7 +1,4 @@
-/**
- * Auth Controller - Application Layer
- * Handles HTTP requests and delegates to use cases
- */
+// Auth controller - handles HTTP requests and calls use cases
 
 import { Request, Response } from 'express';
 import { RegisterUserUseCase } from '../../core/use-cases/RegisterUserUseCase';
@@ -48,9 +45,7 @@ export class AuthController {
     private readonly deactivateAccountUseCase: DeactivateAccountUseCase
   ) {}
 
-  /**
-   * Register a new user
-   */
+  // Register new user
   async register(req: Request, res: Response): Promise<void> {
     try {
       const request: RegisterRequest = {
@@ -60,7 +55,7 @@ export class AuthController {
 
       const result = await this.registerUserUseCase.execute(request);
 
-      // Set refresh token as httpOnly cookie
+      // Store refresh token in httpOnly cookie for security
       this.setRefreshTokenCookie(res, result.refreshToken);
 
       sendCreated(res, 'User registered successfully', {
@@ -74,9 +69,7 @@ export class AuthController {
     }
   }
 
-  /**
-   * Login user
-   */
+  // User login
   async login(req: Request, res: Response): Promise<void> {
     try {
       const request: LoginRequest & { ipAddress?: string; userAgent?: string } = {
@@ -88,7 +81,7 @@ export class AuthController {
 
       const result = await this.loginUseCase.execute(request);
 
-      // Set refresh token as httpOnly cookie
+      // Store refresh token in cookie
       this.setRefreshTokenCookie(res, result.refreshToken);
 
       sendSuccess(res, 200, 'Login successful', {
@@ -102,12 +95,10 @@ export class AuthController {
     }
   }
 
-  /**
-   * Refresh access token
-   */
+  // Refresh access token
   async refreshToken(req: Request, res: Response): Promise<void> {
     try {
-      // Get refresh token from cookie or body
+      // Try to get refresh token from cookie, body, or header
       const refreshToken =
         req.cookies?.refreshToken || req.body.refreshToken || req.headers['x-refresh-token'];
 
@@ -120,7 +111,7 @@ export class AuthController {
 
       const result = await this.refreshTokenUseCase.execute(request);
 
-      // Set new refresh token as httpOnly cookie
+      // Update refresh token cookie
       this.setRefreshTokenCookie(res, result.refreshToken);
 
       sendSuccess(res, 200, 'Token refreshed successfully', {
@@ -134,9 +125,7 @@ export class AuthController {
     }
   }
 
-  /**
-   * Logout user
-   */
+  // Logout
   async logout(req: Request, res: Response): Promise<void> {
     try {
       const refreshToken =
@@ -151,7 +140,7 @@ export class AuthController {
 
       await this.logoutUseCase.execute(request);
 
-      // Clear refresh token cookie
+      // Remove refresh token cookie
       this.clearRefreshTokenCookie(res);
 
       sendSuccess(res, 200, 'Logged out successfully');
@@ -161,9 +150,7 @@ export class AuthController {
     }
   }
 
-  /**
-   * Set refresh token as httpOnly cookie
-   */
+  // Helper to set refresh token cookie
   private setRefreshTokenCookie(res: Response, token: string): void {
     const config = require('../../config/env').getEnvConfig();
     const maxAge = this.parseExpiresIn(config.JWT_REFRESH_TOKEN_EXPIRES_IN) * 1000;
@@ -178,9 +165,7 @@ export class AuthController {
     });
   }
 
-  /**
-   * Clear refresh token cookie
-   */
+  // Helper to clear refresh token cookie
   private clearRefreshTokenCookie(res: Response): void {
     const config = require('../../config/env').getEnvConfig();
 
@@ -216,9 +201,7 @@ export class AuthController {
     }
   }
 
-  /**
-   * Forgot password - request password reset
-   */
+  // Request password reset
   async forgotPassword(req: Request, res: Response): Promise<void> {
     try {
       const request: ForgotPasswordRequest = {
@@ -227,7 +210,7 @@ export class AuthController {
 
       await this.forgotPasswordUseCase.execute(request);
 
-      // Always return success to prevent email enumeration
+      // Don't reveal if email exists (security best practice)
       sendSuccess(res, 200, 'If an account exists with this email, a password reset link has been sent.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to process request';
@@ -235,9 +218,7 @@ export class AuthController {
     }
   }
 
-  /**
-   * Reset password using reset token
-   */
+  // Reset password with token
   async resetPassword(req: Request, res: Response): Promise<void> {
     try {
       const request: ResetPasswordRequest = {
@@ -254,9 +235,7 @@ export class AuthController {
     }
   }
 
-  /**
-   * Verify email using verification token
-   */
+  // Verify email address
   async verifyEmail(req: Request, res: Response): Promise<void> {
     try {
       const request: VerifyEmailRequest = {
@@ -272,9 +251,7 @@ export class AuthController {
     }
   }
 
-  /**
-   * Resend verification email
-   */
+  // Resend verification email
   async resendVerificationEmail(req: Request, res: Response): Promise<void> {
     try {
       const request: ResendVerificationEmailRequest = {
@@ -290,9 +267,7 @@ export class AuthController {
     }
   }
 
-  /**
-   * Change password (requires authentication)
-   */
+  // Change password (requires auth)
   async changePassword(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
@@ -314,9 +289,7 @@ export class AuthController {
     }
   }
 
-  /**
-   * Deactivate account (requires authentication)
-   */
+  // Deactivate account (requires auth)
   async deactivateAccount(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
@@ -330,7 +303,7 @@ export class AuthController {
 
       await this.deactivateAccountUseCase.execute(req.user.userId, request);
 
-      // Clear refresh token cookie
+      // Remove refresh token since account is deactivated
       this.clearRefreshTokenCookie(res);
 
       sendSuccess(res, 200, 'Account deactivated successfully');

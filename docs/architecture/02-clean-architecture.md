@@ -12,11 +12,11 @@
 
 ## Introduction
 
-This project follows **Clean Architecture** principles, also known as **Hexagonal Architecture** or **Ports and Adapters**. The architecture ensures that business logic remains independent of frameworks, databases, and external services.
+I used **Clean Architecture** (also called Hexagonal Architecture or Ports and Adapters) to keep business logic independent from frameworks, databases, and external services.
 
-### Core Principle
+### The Main Rule
 
-> **Dependency Rule**: Dependencies point inward. Outer layers depend on inner layers, but inner layers never depend on outer layers.
+> **Dependencies point inward**: Outer layers depend on inner layers, but inner layers never depend on outer layers.
 
 ---
 
@@ -61,22 +61,21 @@ Each service follows a layered architecture with clear boundaries:
 
 ### 1. Core Layer (`src/core/`)
 
-**Purpose**: Pure business logic with no external dependencies
+This is where the business logic lives - no frameworks, no databases, just pure logic.
 
 **Contains**:
-- **Entities**: Domain models (User, Role, Address, etc.)
-- **Use Cases**: Business logic implementations
+- **Entities**: Domain models like User, Role, Address
+- **Use Cases**: The actual business logic
   - `RegisterUserUseCase`
   - `LoginUseCase`
   - `CreateAddressUseCase`
   - etc.
 
-**Characteristics**:
-- ✅ No framework dependencies
-- ✅ No database dependencies
-- ✅ No HTTP dependencies
-- ✅ Pure TypeScript/JavaScript
-- ✅ Testable in isolation
+**Key points**:
+- No Express, no Prisma, no external libraries
+- Just TypeScript/JavaScript
+- Easy to test in isolation
+- Can swap out frameworks without touching this layer
 
 **Example**:
 ```typescript
@@ -106,24 +105,24 @@ export class LoginUseCase {
 
 ### 2. Ports Layer (`src/ports/`)
 
-**Purpose**: Define contracts/interfaces (Dependency Inversion Principle)
+Defines the contracts (interfaces) that the core layer depends on. This is where dependency inversion happens.
 
 **Contains**:
-- **Interfaces**: Repository interfaces, service interfaces
+- **Interfaces**: Repository and service interfaces
   - `IUserRepository`
   - `IPasswordHasher`
   - `ITokenService`
   - `IEventPublisher`
-- **DTOs**: Data Transfer Objects for API contracts
+- **DTOs**: Request/response data structures
   - `LoginRequest`
   - `RegisterRequest`
   - etc.
 
-**Characteristics**:
-- ✅ Defines what, not how
-- ✅ Used by Core layer
-- ✅ Implemented by Infrastructure layer
-- ✅ Enables dependency inversion
+**What it does**:
+- Defines *what* we need, not *how* it's implemented
+- Core layer uses these interfaces
+- Infrastructure layer implements them
+- This lets us swap implementations without changing core logic
 
 **Example**:
 ```typescript
@@ -142,21 +141,21 @@ export interface IUserRepository {
 
 ### 3. Application Layer (`src/application/`)
 
-**Purpose**: Orchestrates use cases and handles HTTP concerns
+This layer coordinates use cases and handles HTTP stuff - request parsing, response formatting, etc.
 
 **Contains**:
-- **Controllers**: HTTP request/response handling
+- **Controllers**: Handle HTTP requests and call use cases
   - `AuthController`
   - `UserController`
-- **DTOs**: Request/Response data structures
-- **Utils**: Response helpers, validators
+- **DTOs**: Request/response structures
+- **Utils**: Helper functions for responses, validation
 
-**Characteristics**:
-- ✅ Coordinates use cases
-- ✅ Handles HTTP concerns
-- ✅ Validates requests
-- ✅ Formats responses
-- ✅ Framework-aware but business-logic-free
+**What it does**:
+- Calls use cases from the core layer
+- Handles HTTP-specific stuff (Express requests/responses)
+- Validates incoming requests
+- Formats responses
+- No business logic here - just coordination
 
 **Example**:
 ```typescript
@@ -182,26 +181,26 @@ export class AuthController {
 
 ### 4. Infrastructure Layer (`src/infrastructure/`)
 
-**Purpose**: Framework-specific implementations
+This is where all the framework-specific code lives - Prisma, Express, Redis, AWS SDK, etc.
 
 **Contains**:
-- **Database**: Prisma repositories
+- **Database**: Prisma repositories that implement the port interfaces
   - `PrismaUserRepository`
   - `PrismaAddressRepository`
 - **External Services**: AWS SDK, Redis, etc.
   - `SNSEventPublisher`
   - `RedisCache`
   - `AuthServiceClient`
-- **Framework**: Express middleware, logging, etc.
+- **Framework stuff**: Express middleware, logging
   - `errorHandler.middleware.ts`
   - `rateLimiter.middleware.ts`
   - `logger.ts`
 
-**Characteristics**:
-- ✅ Implements Port interfaces
-- ✅ Framework-specific code
-- ✅ Can be swapped without changing Core
-- ✅ Handles technical concerns
+**What it does**:
+- Implements the interfaces from the ports layer
+- All the framework-specific code is here
+- Can swap out Prisma for TypeORM, Express for Fastify, etc. without touching core
+- Handles technical details like database connections, caching, etc.
 
 **Example**:
 ```typescript
@@ -330,29 +329,29 @@ export class Container {
 
 ## Benefits
 
-### 1. Testability
-- Core logic can be tested without databases or HTTP
-- Mock interfaces easily
-- Fast unit tests
+### 1. Easy to Test
+- Can test business logic without setting up databases or HTTP servers
+- Just mock the interfaces
+- Tests run fast
 
-### 2. Framework Independence
-- Business logic doesn't depend on Express, Prisma, etc.
-- Can swap frameworks without changing Core
-- Easy to migrate to different technologies
+### 2. Framework Independent
+- Business logic doesn't care about Express or Prisma
+- Want to switch from Prisma to TypeORM? Just change the infrastructure layer
+- Core logic stays the same
 
-### 3. Maintainability
-- Clear boundaries and responsibilities
-- Easy to understand code structure
-- Changes are localized
+### 3. Maintainable
+- Clear boundaries - you know where everything belongs
+- Easy to understand the structure
+- Changes are isolated to specific layers
 
-### 4. Team Collaboration
-- Teams can work on different layers independently
-- Clear contracts between layers
-- Reduced merge conflicts
+### 4. Team Friendly
+- Teams can work on different layers without conflicts
+- Clear contracts (interfaces) between layers
+- Less merge conflict headaches
 
-### 5. Flexibility
-- Swap implementations (Prisma → TypeORM)
-- Add new features without breaking existing code
+### 5. Flexible
+- Swap implementations easily (Prisma → TypeORM, Express → Fastify)
+- Add features without breaking existing code
 - Easy to extend
 
 ---
@@ -386,7 +385,7 @@ export class Container {
    - Publishes to AWS SNS
    - Handles errors
 
-**Key Point**: Core layer doesn't know about Prisma or AWS. It only knows about interfaces!
+**The key point**: The core layer has no idea about Prisma or AWS. It only knows about the interfaces!
 
 ---
 

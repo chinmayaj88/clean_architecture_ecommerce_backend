@@ -12,13 +12,13 @@
 
 ## Overview
 
-The platform consists of multiple microservices, each responsible for a specific business domain. Each service is:
+The platform is made up of multiple microservices, each handling a specific part of the business. Each service:
 
-- **Independently deployable**
-- **Independently scalable**
-- **Has its own database**
-- **Follows Clean Architecture**
-- **Communicates via HTTP and Events**
+- Can be deployed independently
+- Can scale independently
+- Has its own database (no sharing)
+- Uses Clean Architecture
+- Communicates via HTTP and events
 
 ---
 
@@ -28,32 +28,30 @@ The platform consists of multiple microservices, each responsible for a specific
 **Database**: PostgreSQL (`auth_db`)  
 **Purpose**: Authentication, authorization, and user session management
 
-### Responsibilities
+### What It Does
 
-1. **User Authentication**
-   - User registration
-   - Login/logout
-   - Password management (reset, change)
+1. **Authentication**
+   - User registration and login/logout
+   - Password reset and change
    - Email verification
 
 2. **Authorization**
    - JWT token generation and validation
    - Refresh token management
    - Role-Based Access Control (RBAC)
-   - Token refresh
 
-3. **Security & Advanced Features**
-   - Account lockout after failed attempts
-   - Security audit logging
-   - Password hashing (bcrypt)
-   - **Multi-Factor Authentication (MFA/TOTP)** - TOTP-based 2FA with backup codes
-   - **Device Management** - Track, manage, and revoke devices
-   - **Login History** - Detailed login tracking with IP, location, device info
-   - **Session Management** - Active session tracking and revocation
-   - **Suspicious Login Detection** - IP-based security with risk scoring
+3. **Security Features**
+   - Account lockout after too many failed login attempts
+   - Security audit logging for tracking
+   - Password hashing with bcrypt
+   - **MFA/TOTP** - Two-factor authentication with backup codes
+   - **Device Management** - Track and manage user devices
+   - **Login History** - Track logins with IP, location, device info
+   - **Session Management** - Track active sessions and allow revocation
+   - **Suspicious Login Detection** - Detect unusual login patterns
 
-4. **Event Publishing**
-   - Publishes `user.created` events
+4. **Events**
+   - Publishes `user.created` events when users register
    - Publishes `user.deactivated` events
    - Publishes password reset events
 
@@ -94,10 +92,10 @@ The platform consists of multiple microservices, each responsible for a specific
 - `DetectSuspiciousLoginUseCase` - Detect suspicious login patterns
 
 #### Infrastructure
-- **Database**: Prisma ORM with PostgreSQL
-- **Caching**: Redis (optional, for rate limiting)
-- **Events**: AWS SNS (or LocalStack for local dev)
-- **Security**: bcryptjs, jsonwebtoken
+- **Database**: PostgreSQL with Prisma ORM
+- **Caching**: Redis (used for rate limiting and caching)
+- **Events**: AWS SNS (LocalStack for local development)
+- **Security**: bcryptjs for password hashing, jsonwebtoken for JWT
 
 ### API Endpoints
 
@@ -173,51 +171,51 @@ LOCALSTACK_ENDPOINT=http://localhost:4566  # Local dev only
 **Database**: PostgreSQL (`user_db`)  
 **Purpose**: User profile management and e-commerce features
 
-### Responsibilities
+### What It Does
 
-1. **User Profile Management**
-   - Create/read/update user profiles
-   - User preferences
-   - Profile information (name, phone, avatar, etc.)
-   - **Profile Completion Score** - Automatic calculation (0-100)
+1. **User Profiles**
+   - Create, read, update user profiles
+   - Store user preferences
+   - Profile info like name, phone, avatar
+   - **Profile Completion Score** - Automatically calculated (0-100)
 
-2. **Address Management**
-   - CRUD operations for user addresses
-   - Multiple addresses per user
-   - Default address selection
+2. **Addresses**
+   - CRUD operations for addresses
+   - Users can have multiple addresses
+   - Set default address
 
 3. **Payment Methods**
    - CRUD operations for payment methods
    - Multiple payment methods per user
-   - Secure storage (tokenization in production)
+   - Secure storage (tokenized in production)
 
-4. **Wishlist Management**
+4. **Wishlist**
    - Add/remove items from wishlist
-   - Retrieve user wishlist
+   - Get user's wishlist
 
 5. **Recently Viewed Products**
-   - Track product views with timestamps
+   - Track which products users view
    - Retrieve recently viewed products
-   - Auto-cleanup old views
+   - Auto-cleanup of old views
 
-6. **User Activity Tracking**
-   - Track all user actions (views, searches, purchases)
+6. **Activity Tracking**
+   - Track user actions (views, searches, purchases)
    - Activity timeline and analytics
-   - User behavior statistics
+   - User behavior stats
 
 7. **Notification Preferences**
-   - Granular notification settings per channel (email, SMS, push)
+   - Granular settings per channel (email, SMS, push)
    - Category-based preferences (orders, promotions, reviews, etc.)
    - Frequency settings (real-time, daily, weekly, never)
 
 8. **GDPR Compliance**
-   - Data export (export all user data in JSON format)
+   - Data export (all user data in JSON)
    - Account deletion (right to be forgotten)
    - Privacy consent management
 
 9. **Event Consumption**
-   - Consumes `user.created` events from auth-service
-   - Creates user profile when user registers
+   - Listens for `user.created` events from auth-service
+   - Creates user profile when a user registers
 
 ### Key Components
 
@@ -257,10 +255,10 @@ LOCALSTACK_ENDPOINT=http://localhost:4566  # Local dev only
 - `HandleUserCreatedEventUseCase` - Process user.created event
 
 #### Infrastructure
-- **Database**: Prisma ORM with PostgreSQL
-- **Caching**: Redis (optional)
-- **Events**: AWS SQS consumer (or LocalStack)
-- **Auth**: HTTP client to auth-service for RBAC
+- **Database**: PostgreSQL with Prisma ORM
+- **Caching**: Redis for caching user data
+- **Events**: AWS SQS consumer (LocalStack for local dev)
+- **Auth**: HTTP client to auth-service for RBAC checks
 
 ### API Endpoints
 
@@ -373,67 +371,58 @@ LOCALSTACK_ENDPOINT=http://localhost:4566  # Local dev only
 **Database**: PostgreSQL (`product_db`)  
 **Purpose**: Product catalog management with advanced e-commerce features
 
-### Responsibilities
+### What It Does
 
-1. **Product Catalog Management**
+1. **Product Catalog**
    - CRUD operations for products
-   - Product variants and inventory
+   - Product variants and inventory management
    - Product images and media
    - Categories and tags
-   - Product visibility and status management
+   - Product visibility and status
 
-2. **Advanced Search & Filtering**
+2. **Search & Filtering**
    - Full-text search with relevance scoring
-   - Multi-criteria filtering (price, category, rating, stock, badges)
-   - Faceted search capabilities
-   - Sort options (price, rating, popularity, newest, relevance)
+   - Filter by price, category, rating, stock, badges
+   - Faceted search
+   - Sort by price, rating, popularity, newest, relevance
    - Search history tracking
 
-3. **Product Recommendations**
+3. **Recommendations**
    - "Customers who viewed this also viewed"
    - Related products by category
-   - Popular products
-   - Trending products
+   - Popular and trending products
    - Personalized recommendations
 
-4. **Product Q&A Section**
-   - Ask questions about products
-   - Answer questions (verified purchasers or admins)
+4. **Q&A**
+   - Users can ask questions about products
+   - Answers from verified purchasers or admins
    - Upvote helpful answers
    - Q&A moderation workflow
 
-5. **Review System & Moderation**
-   - Product reviews with ratings (1-5 stars)
-   - Review moderation workflow (approve/reject)
-   - Review helpfulness voting
+5. **Reviews & Moderation**
+   - Product reviews with 1-5 star ratings
+   - Review moderation (approve/reject)
+   - Helpfulness voting
    - Verified purchase badges
-   - Review statistics (average rating, distribution)
+   - Review stats (average rating, distribution)
 
 6. **Product Badges**
-   - New product badge
-   - Sale/On Sale badge
-   - Featured product badge
-   - Bestseller badge
-   - Trending badge
-   - Limited stock badge
+   - New, Sale, Featured, Bestseller, Trending, Limited stock badges
 
 7. **Stock Management**
-   - Stock quantity tracking
+   - Track stock quantities
    - Stock alerts (notify when back in stock)
    - Low stock notifications
    - Stock status management
 
-8. **Product Analytics**
-   - View count tracking
-   - Purchase count tracking
-   - Search count tracking
+8. **Analytics**
+   - Track views, purchases, searches
    - Product performance metrics
 
 9. **Product Comparisons**
    - Compare up to 4 products side-by-side
-   - Comparison features (price, specs, ratings, reviews)
-   - Save comparisons
-   - Share comparisons
+   - Compare price, specs, ratings, reviews
+   - Save and share comparisons
 
 10. **Price History**
     - Track price changes over time
@@ -480,9 +469,9 @@ LOCALSTACK_ENDPOINT=http://localhost:4566  # Local dev only
 - `UpdateProductBadgesUseCase` - Update badges
 
 #### Infrastructure
-- **Database**: Prisma ORM with PostgreSQL
-- **Caching**: Redis (for product caching)
-- **Search**: Full-text search with PostgreSQL (can be enhanced with Elasticsearch)
+- **Database**: PostgreSQL with Prisma ORM
+- **Caching**: Redis for product caching
+- **Search**: Full-text search with PostgreSQL (could add Elasticsearch later)
 - **Auth**: JWT verification for protected endpoints
 
 ### API Endpoints
@@ -591,47 +580,47 @@ AUTH_SERVICE_URL=http://auth-service:3001
 
 ### Database Per Service
 
-Each service has its **own database**:
-- ✅ No shared databases
-- ✅ Independent schema evolution
-- ✅ Independent scaling
-- ✅ Data isolation
+Each service has its own database:
+- No shared databases
+- Each service can evolve its schema independently
+- Can scale databases independently
+- Data is isolated between services
 
 ### Communication
 
-Services communicate via:
-1. **HTTP REST APIs** (synchronous)
-   - User-service → Auth-service for RBAC
+Services communicate in two ways:
+1. **HTTP (synchronous)** - When we need immediate responses
+   - User-service calls auth-service for RBAC checks
    - Configurable via `AUTH_SERVICE_URL`
 
-2. **Event-Driven** (asynchronous)
-   - Auth-service publishes events → SNS
-   - User-service consumes events → SQS
-   - Loose coupling, eventual consistency
+2. **Events (asynchronous)** - For loose coupling
+   - Auth-service publishes events to SNS
+   - User-service consumes events from SQS
+   - Eventual consistency - services eventually sync up
 
-### Deployment Independence
+### Deployment
 
 Each service can be:
-- ✅ Deployed independently
-- ✅ Scaled independently
-- ✅ Updated independently
-- ✅ Rolled back independently
+- Deployed independently
+- Scaled independently
+- Updated independently
+- Rolled back independently
 
 ---
 
-## Service Responsibilities
+## What Each Service Owns
 
 ### Auth Service
 
 **Owns**:
-- User authentication data
+- User authentication data (emails, password hashes)
 - JWT tokens
 - Roles and permissions
 - Security audit logs
 
-**Does NOT Own**:
+**Doesn't own**:
 - User profile data
-- User addresses
+- Addresses
 - Payment methods
 - Wishlist items
 
@@ -646,10 +635,10 @@ Each service can be:
 - User activity tracking
 - Notification preferences
 
-**Does NOT Own**:
+**Doesn't own**:
 - Authentication credentials
 - JWT tokens
-- Roles (reads from JWT)
+- Roles (reads from JWT token)
 
 ### Product Service
 
@@ -662,8 +651,8 @@ Each service can be:
 - Product comparisons
 - Price history
 
-**Does NOT Own**:
-- User data (references by ID only)
+**Doesn't own**:
+- User data (only references user IDs)
 - Order data
 - Cart data
 

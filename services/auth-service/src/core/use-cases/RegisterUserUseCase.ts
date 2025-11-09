@@ -19,11 +19,13 @@ export class RegisterUserUseCase {
   ) {}
 
   async execute(request: RegisterRequest) {
+    // Check if email already exists
     const exists = await this.userRepository.existsByEmail(request.email);
     if (exists) {
       throw new Error('Email already registered');
     }
 
+    // Hash password and create user
     const passwordHash = await this.passwordHasher.hash(request.password);
     const user = await this.userRepository.create({
       email: request.email,
@@ -32,24 +34,28 @@ export class RegisterUserUseCase {
       isActive: true,
     });
 
+    // Assign default 'user' role
     const defaultRole = await this.roleRepository.findByName('user');
     if (defaultRole) {
       await this.roleRepository.assignRoleToUser(user.id, defaultRole.id);
     }
 
+    // Get user with roles for token generation
     const userWithRoles = await this.userRepository.findByEmailWithRoles(user.email);
     if (!userWithRoles) {
       throw new Error('Failed to retrieve created user');
     }
 
+    // Generate JWT tokens
     const tokens = await this.tokenService.generateTokens({
       userId: user.id,
       email: user.email,
       roles: userWithRoles.roles,
     });
 
+    // Create email verification token (24 hour expiry)
     const verificationToken = randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 86400000);
+    const expiresAt = new Date(Date.now() + 86400000); // 24 hours
 
     await this.emailVerificationTokenRepository.create({
       token: verificationToken,
@@ -64,8 +70,9 @@ export class RegisterUserUseCase {
       source: 'auth-service',
     };
 
+    // Publish event (fire and forget - failures are logged)
     this.eventPublisher.publish('user.created', event).catch(() => {
-      // Event publishing failures are logged by the publisher
+      // Event failures are handled by the publisher
     });
 
     const verificationEvent = {
@@ -77,8 +84,9 @@ export class RegisterUserUseCase {
       source: 'auth-service',
     };
 
+    // Send verification email event
     this.eventPublisher.publish('user.email.verification.requested', verificationEvent).catch(() => {
-      // Event publishing failures are logged by the publisher
+      // Errors are logged elsewhere
     });
 
     return {

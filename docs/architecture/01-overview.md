@@ -10,16 +10,16 @@
 
 ## Introduction
 
-This document provides a comprehensive overview of the E-Commerce Microservices Platform architecture. The platform is built using modern microservices principles, Clean Architecture patterns, and event-driven design to create a scalable, maintainable, and production-ready system.
+This doc gives an overview of the e-commerce microservices platform architecture. I built it using microservices principles, Clean Architecture, and event-driven design to make it scalable and maintainable.
 
-### Key Architectural Principles
+### Key Principles
 
-- **Microservices Architecture**: Each service is independently deployable and scalable
-- **Clean Architecture**: Clear separation of concerns with dependency inversion
-- **Event-Driven Communication**: Asynchronous communication via AWS SNS/SQS
-- **Domain-Driven Design**: Services organized around business capabilities
-- **SOLID Principles**: Applied throughout the codebase
-- **Production-Ready**: Built with security, monitoring, and reliability in mind
+- **Microservices**: Each service can be deployed and scaled independently
+- **Clean Architecture**: Business logic is separated from frameworks
+- **Event-Driven**: Services communicate asynchronously via AWS SNS/SQS
+- **Domain-Driven**: Services are organized around business capabilities
+- **SOLID**: Applied throughout to keep the code maintainable
+- **Production-Ready**: Includes security, monitoring, and error handling
 
 ---
 
@@ -75,12 +75,12 @@ This document provides a comprehensive overview of the E-Commerce Microservices 
               └──────────────────┘
 ```
 
-### Service Communication Patterns
+### How Services Communicate
 
-1. **Synchronous HTTP**: Service-to-service calls (e.g., user-service → auth-service for RBAC)
-2. **Asynchronous Events**: Event-driven communication via SNS/SQS
-3. **Shared Database**: ❌ No shared databases (each service has its own)
-4. **API Gateway**: Future implementation for unified API access
+1. **HTTP (synchronous)**: Direct service calls when needed (e.g., user-service calls auth-service for RBAC checks)
+2. **Events (asynchronous)**: Services publish/consume events via SNS/SQS
+3. **No Shared Databases**: Each service has its own database - no sharing
+4. **API Gateway**: Not implemented yet, but planned for unified API access
 
 ---
 
@@ -108,31 +108,35 @@ This architecture documentation is organized into the following sections:
 ## Key Characteristics
 
 ### Scalability
-- **Horizontal Scaling**: Each service can be scaled independently
-- **Stateless Services**: Services don't maintain session state
-- **Distributed Caching**: Redis for performance optimization
-- **Database Per Service**: Independent scaling of databases
+
+- Each service can scale independently (horizontal scaling)
+- Services are stateless - no session state stored in the service
+- Redis caching for better performance
+- Each service has its own database, so they can scale independently
 
 ### Reliability
-- **Health Checks**: `/health` and `/ready` endpoints for monitoring
-- **Graceful Shutdown**: Proper resource cleanup on termination
-- **Error Handling**: Centralized error handling with structured logging
-- **Circuit Breakers**: Future implementation for fault tolerance
+
+- Health check endpoints (`/health` and `/ready`) for monitoring
+- Graceful shutdown - properly cleans up connections
+- Centralized error handling with structured logging
+- Circuit breakers are planned but not implemented yet
 
 ### Security
-- **JWT Authentication**: Stateless token-based authentication
-- **RBAC**: Role-Based Access Control
-- **Account Lockout**: Protection against brute force attacks
-- **Security Audit Logging**: Track all security-sensitive operations
-- **CORS Protection**: Configurable origin validation
-- **Rate Limiting**: Distributed rate limiting via Redis
+
+- JWT tokens for stateless authentication
+- RBAC for authorization
+- Account lockout after failed login attempts
+- Security audit logging for tracking sensitive operations
+- CORS protection with configurable origins
+- Rate limiting using Redis
 
 ### Maintainability
-- **Clean Architecture**: Clear separation of concerns
-- **Type Safety**: TypeScript throughout
-- **Dependency Injection**: Loose coupling via interfaces
-- **Comprehensive Logging**: Structured logging with request IDs
-- **OpenAPI Documentation**: Auto-generated API docs
+
+- Clean Architecture keeps things organized
+- TypeScript for type safety
+- Dependency injection for loose coupling
+- Structured logging with request IDs for tracing
+- OpenAPI docs auto-generated from code
 
 ---
 
