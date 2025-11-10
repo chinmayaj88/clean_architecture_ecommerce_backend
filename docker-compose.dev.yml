@@ -79,6 +79,46 @@ services:
     networks:
       - ecommerce-network
 
+  # PostgreSQL database for order-service
+  postgres-order:
+    image: postgres:16-alpine
+    container_name: postgres-order
+    environment:
+      POSTGRES_USER: order_user
+      POSTGRES_PASSWORD: order_pass
+      POSTGRES_DB: order_db
+    ports:
+      - "5437:5432"
+    volumes:
+      - postgres-order-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U order_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-network
+
+  # PostgreSQL database for payment-service
+  postgres-payment:
+    image: postgres:16-alpine
+    container_name: postgres-payment
+    environment:
+      POSTGRES_USER: payment_user
+      POSTGRES_PASSWORD: payment_pass
+      POSTGRES_DB: payment_db
+    ports:
+      - "5438:5432"
+    volumes:
+      - postgres-payment-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-network
+
   # Redis for caching and distributed rate limiting
   redis:
     image: redis:7.4-alpine
@@ -133,6 +173,8 @@ services:
       - postgres-user
       - postgres-product
       - postgres-cart
+      - postgres-order
+      - postgres-payment
     networks:
       - ecommerce-network
 
@@ -141,6 +183,8 @@ volumes:
   postgres-user-data:
   postgres-product-data:
   postgres-cart-data:
+  postgres-order-data:
+  postgres-payment-data:
   redis-data:
   localstack-data:
 

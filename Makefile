@@ -22,6 +22,8 @@ generate-prisma: ## Generate Prisma clients for all services (for setup/developm
 	cd services/user-service && npm run prisma:generate
 	cd services/product-service && npm run prisma:generate
 	cd services/cart-service && npm run prisma:generate
+	cd services/order-service && npm run prisma:generate
+	cd services/payment-service && npm run prisma:generate
 	@echo "✅ All Prisma clients generated"
 
 build: ## Build all services (generates Prisma clients and builds each service individually)
@@ -32,6 +34,8 @@ build: ## Build all services (generates Prisma clients and builds each service i
 	cd services/user-service && npm run prisma:generate && npm run build
 	cd services/product-service && npm run prisma:generate && npm run build
 	cd services/cart-service && npm run prisma:generate && npm run build
+	cd services/order-service && npm run prisma:generate && npm run build
+	cd services/payment-service && npm run prisma:generate && npm run build
 	cd services/gateway-service && npm run build
 	cd services/notification-service && npm run build
 	@echo "✅ All services built successfully"
@@ -55,6 +59,16 @@ build-cart: ## Build cart-service individually (microservice pattern)
 	@echo "Building cart-service..."
 	cd services/cart-service && npm run prisma:generate && npm run build
 	@echo "✅ Cart-service built successfully"
+
+build-order: ## Build order-service individually (microservice pattern)
+	@echo "Building order-service..."
+	cd services/order-service && npm run prisma:generate && npm run build
+	@echo "✅ Order-service built successfully"
+
+build-payment: ## Build payment-service individually (microservice pattern)
+	@echo "Building payment-service..."
+	cd services/payment-service && npm run prisma:generate && npm run build
+	@echo "✅ Payment-service built successfully"
 
 build-gateway: ## Build gateway-service individually (microservice pattern)
 	@echo "Building gateway-service..."
@@ -125,6 +139,16 @@ migrate-cart: ## Run cart-service database migrations
 	cd services/cart-service && npm run prisma:generate && npm run prisma:migrate:deploy
 	@echo "✅ Cart-service migrations completed"
 
+migrate-order: ## Run order-service database migrations
+	@echo "Running migrations for order-service..."
+	cd services/order-service && npm run prisma:generate && npm run prisma:migrate:deploy
+	@echo "✅ Order-service migrations completed"
+
+migrate-payment: ## Run payment-service database migrations
+	@echo "Running migrations for payment-service..."
+	cd services/payment-service && npm run prisma:generate && npm run prisma:migrate:deploy
+	@echo "✅ Payment-service migrations completed"
+
 migrate-all: ## Run migrations for all services
 	@echo "Running migrations for all services..."
 	@echo "Note: Each service generates its Prisma client before migrating to avoid conflicts"
@@ -132,6 +156,8 @@ migrate-all: ## Run migrations for all services
 	$(MAKE) migrate-user
 	$(MAKE) migrate-product
 	$(MAKE) migrate-cart
+	$(MAKE) migrate-order
+	$(MAKE) migrate-payment
 	@echo "✅ All migrations completed"
 
 # Database Seeding
@@ -221,6 +247,29 @@ else
 endif
 	@echo "✅ Cart-service database setup complete"
 
+setup-payment: ## Complete setup for payment-service (migrate)
+	@echo "Setting up payment-service database..."
+	@echo "Note: Ensure .env file exists with required environment variables"
+ifeq ($(DETECTED_OS),Windows)
+	@powershell -Command "if (-not (Test-Path 'services\payment-service\.env')) { Write-Host '⚠️  Warning: .env file not found. Please create services\payment-service\.env with required environment variables.' }"
+else
+	@if [ ! -f services/payment-service/.env ]; then \
+		echo "⚠️  Warning: .env file not found. Please create services/payment-service/.env with required environment variables."; \
+	fi
+endif
+	@echo "Creating initial migration if needed..."
+ifeq ($(DETECTED_OS),Windows)
+	@powershell -Command "$$migrationsPath = 'services\payment-service\prisma\migrations'; $$hasMigrations = (Test-Path $$migrationsPath) -and ((Get-ChildItem $$migrationsPath -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0); if (-not $$hasMigrations) { Write-Host 'No migrations found, creating initial migration...'; Set-Location services\payment-service; npm.cmd run prisma:generate; npx.cmd prisma migrate dev --name init --skip-seed; Set-Location ..\.. } else { Write-Host 'Migrations found, running migrate-payment...'; Set-Location services\payment-service; npm.cmd run prisma:generate; npm.cmd run prisma:migrate:deploy; Set-Location ..\.. }"
+else
+	@if [ ! -d "services/payment-service/prisma/migrations" ] || [ -z "$$(ls -A services/payment-service/prisma/migrations 2>/dev/null)" ]; then \
+		echo "No migrations found, creating initial migration..."; \
+		cd services/payment-service && npm run prisma:generate && npx prisma migrate dev --name init --skip-seed || true; \
+	else \
+		$(MAKE) migrate-payment; \
+	fi
+endif
+	@echo "✅ Payment-service database setup complete"
+
 setup-all: ## Complete setup for all services (migrate + seed)
 	@echo "Setting up all service databases..."
 	@echo "Note: Each service generates its Prisma client individually during setup"
@@ -228,6 +277,7 @@ setup-all: ## Complete setup for all services (migrate + seed)
 	$(MAKE) setup-auth
 	$(MAKE) setup-user
 	$(MAKE) setup-cart
+	$(MAKE) setup-payment
 	@echo "✅ All service databases setup complete"
 	@echo ""
 	@echo "💡 Tip: When building services individually (as microservices should be),"

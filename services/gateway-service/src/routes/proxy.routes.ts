@@ -213,6 +213,21 @@ function requiresAuth(path: string): boolean {
     return path.includes('/merge');
   }
 
+  // Order service - all routes require auth
+  if (path.startsWith('/api/v1/orders/')) {
+    return true;
+  }
+
+  // Payment service - all routes require auth except webhooks
+  if (path.startsWith('/api/v1/payments/') || path.startsWith('/api/v1/payment-methods/')) {
+    return true;
+  }
+
+  // Payment webhooks - no auth (verified by signature)
+  if (path.startsWith('/api/v1/webhooks')) {
+    return false;
+  }
+
   return false;
 }
 
@@ -290,6 +305,47 @@ export function createProxyRoutes(): Router {
       '^/api/v1/carts': '/api/v1/carts',
     }, {
       cacheable: false, // Cart data is user-specific and frequently updated
+    })
+  );
+
+  // Order service proxy (requires auth)
+  router.use(
+    '/api/v1/orders',
+    authenticate,
+    createServiceProxy('order-service', config.ORDER_SERVICE_URL, {
+      '^/api/v1/orders': '/api/v1/orders',
+    }, {
+      cacheable: false, // Order data is user-specific and frequently updated
+    })
+  );
+
+  // Payment service proxy (requires auth for payments, no auth for webhooks)
+  router.use(
+    '/api/v1/payments',
+    conditionalAuth,
+    createServiceProxy('payment-service', config.PAYMENT_SERVICE_URL, {
+      '^/api/v1/payments': '/api/v1/payments',
+    }, {
+      cacheable: false, // Payment data is sensitive and frequently updated
+    })
+  );
+
+  router.use(
+    '/api/v1/payment-methods',
+    authenticate,
+    createServiceProxy('payment-service', config.PAYMENT_SERVICE_URL, {
+      '^/api/v1/payment-methods': '/api/v1/payment-methods',
+    }, {
+      cacheable: false, // Payment method data is sensitive
+    })
+  );
+
+  router.use(
+    '/api/v1/webhooks',
+    createServiceProxy('payment-service', config.PAYMENT_SERVICE_URL, {
+      '^/api/v1/webhooks': '/api/v1/webhooks',
+    }, {
+      cacheable: false, // Webhooks should not be cached
     })
   );
 

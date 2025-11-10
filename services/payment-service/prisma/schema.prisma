@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum TransactionType {
+  CHARGE
+  REFUND
+  VOID
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum PaymentMethodType {
+  CREDIT_CARD
+  DEBIT_CARD
+  PAYPAL
+}
+
+enum PaymentProvider {
+  STRIPE
+  PAYPAL
+  MOCK
+}
+
+enum WebhookStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+model Payment {
+  id                String          @id @default(cuid())
+  orderId           String          // References order.orders.id (no FK)
+  userId            String          // References auth.users.id (no FK)
+  paymentMethodId   String?         // References payment_methods.id
+  status            PaymentStatus   @default(PENDING)
+  paymentProvider   PaymentProvider @default(MOCK)
+  providerPaymentId String?
+  amount            Decimal         @db.Decimal(10, 2)
+  currency          String          @default("USD")
+  description       String?
+  metadata          Json?
+  processedAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  paymentMethod     PaymentMethod?  @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
+  transactions      PaymentTransaction[]
+  refunds           Refund[]
+  webhooks          PaymentWebhook[]
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([status])
+  @@index([amount])
+  @@index([createdAt])
+  @@index([userId, status, createdAt])
+  @@index([status, createdAt])
+  @@unique([providerPaymentId])
+  @@map("payments")
+}
+
+model PaymentTransaction {
+  id                    String            @id @default(cuid())
+  paymentId             String
+  transactionType       TransactionType
+  status                TransactionStatus @default(PENDING)
+  providerTransactionId String?
+  amount                Decimal           @db.Decimal(10, 2)
+  currency              String            @default("USD")
+  providerResponse      Json?
+  processedAt           DateTime?
+  createdAt             DateTime          @default(now())
+
+  payment               Payment           @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([createdAt])
+  @@index([paymentId, createdAt])
+  @@map("payment_transactions")
+}
+
+model Refund {
+  id              String       @id @default(cuid())
+  paymentId       String
+  orderId         String       // References order.orders.id (no FK)
+  reason          String?
+  amount          Decimal      @db.Decimal(10, 2)
+  currency        String       @default("USD")
+  status          RefundStatus @default(PENDING)
+  providerRefundId String?
+  metadata        Json?
+  processedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  payment         Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("refunds")
+}
+
+model PaymentMethod {
+  id            String            @id @default(cuid())
+  userId        String            // References auth.users.id (no FK)
+  type          PaymentMethodType
+  provider      PaymentProvider   @default(MOCK)
+  providerToken String?           // Encrypted token
+  last4         String?
+  cardType      String?
+  expiryMonth   String?
+  expiryYear    String?
+  isDefault     Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  payments      Payment[]
+
+  @@index([userId])
+  @@map("payment_methods")
+}
+
+model PaymentWebhook {
+  id              String        @id @default(cuid())
+  provider        PaymentProvider
+  eventType       String
+  providerEventId String        @unique
+  payload         Json
+  status          WebhookStatus @default(PENDING)
+  error           String?
+  processedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  paymentId       String?
+
+  payment         Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([providerEventId])
+  @@map("payment_webhooks")
+}
+
+model IdempotencyKey {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  paymentId String
+  userId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([key])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  eventType String
+  userId    String?
+  paymentId String?
+  orderId   String?
+  amount    Decimal? @db.Decimal(10, 2)
+  currency  String?
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  success   Boolean
+  error     String?
+  timestamp DateTime @default(now())
+
+  @@index([eventType])
+  @@index([userId])
+  @@index([paymentId])
+  @@index([orderId])
+  @@index([timestamp])
+  @@index([userId, timestamp])
+  @@map("audit_logs")
+}
+

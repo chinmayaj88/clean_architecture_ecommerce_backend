@@ -10,6 +10,8 @@ const envSchema = z.object({
   USER_SERVICE_URL: z.string().url().default('http://localhost:3002'),
   PRODUCT_SERVICE_URL: z.string().url().default('http://localhost:3003'),
   CART_SERVICE_URL: z.string().url().default('http://localhost:3004'),
+  ORDER_SERVICE_URL: z.string().url().default('http://localhost:3005'),
+  PAYMENT_SERVICE_URL: z.string().url().default('http://localhost:3006'),
   
   // JWT secret for token validation
   JWT_SECRET: z.string().min(32),
