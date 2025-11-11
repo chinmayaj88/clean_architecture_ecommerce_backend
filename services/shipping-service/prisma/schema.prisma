@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ShippingZone {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(255)
+  type        String   @db.VarChar(20) // country, state, postal_code, custom
+  countries   Json     // Array of country codes
+  states      Json?    // Array of state codes
+  postalCodes Json?    // Array of postal code patterns
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  methods ShippingMethod[]
+
+  @@index([isActive])
+  @@map("shipping_zones")
+}
+
+model ShippingMethod {
+  id            String   @id @default(cuid())
+  zoneId        String   @map("zone_id")
+  name          String   @db.VarChar(255)
+  carrier       String   @db.VarChar(50) // fedex, ups, dhl, usps, custom
+  serviceType   String   @map("service_type") @db.VarChar(50) // standard, express, overnight
+  basePrice     Decimal  @default(0) @map("base_price") @db.Decimal(10, 2)
+  pricePerKg    Decimal? @map("price_per_kg") @db.Decimal(10, 2)
+  pricePerItem  Decimal? @map("price_per_item") @db.Decimal(10, 2)
+  estimatedDays Int?     @map("estimated_days")
+  isActive      Boolean  @default(true)
+  configuration Json?    // Carrier-specific configuration
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  zone   ShippingZone    @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  rates  ShippingRate[]
+  shipments Shipment[]
+
+  @@index([zoneId])
+  @@index([isActive])
+  @@map("shipping_methods")
+}
+
+model ShippingRate {
+  id        String   @id @default(cuid())
+  methodId  String   @map("method_id")
+  minWeight Decimal  @default(0) @map("min_weight") @db.Decimal(10, 2)
+  maxWeight Decimal? @map("max_weight") @db.Decimal(10, 2)
+  minAmount Decimal  @default(0) @map("min_amount") @db.Decimal(10, 2)
+  maxAmount Decimal? @map("max_amount") @db.Decimal(10, 2)
+  rate      Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  method ShippingMethod @relation(fields: [methodId], references: [id], onDelete: Cascade)
+
+  @@index([methodId])
+  @@index([methodId, minWeight, maxWeight])
+  @@map("shipping_rates")
+}
+
+model Shipment {
+  id                  String   @id @default(cuid())
+  orderId             String   @map("order_id") // References order-service orders.id
+  carrierId           String?  @map("carrier_id")
+  methodId            String?  @map("method_id")
+  trackingNumber      String   @unique @map("tracking_number") @db.VarChar(100)
+  status              String   @default("pending") @db.VarChar(50) // pending, in_transit, out_for_delivery, delivered, exception
+  weight              Decimal  @db.Decimal(10, 2)
+  cost                Decimal  @db.Decimal(10, 2)
+  originAddress       Json     @map("origin_address")
+  destinationAddress  Json     @map("destination_address")
+  shippedAt           DateTime? @map("shipped_at")
+  estimatedDeliveryDate DateTime? @map("estimated_delivery_date")
+  deliveredAt         DateTime? @map("delivered_at")
+  carrierResponse     Json?    @map("carrier_response")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  carrier  Carrier?          @relation(fields: [carrierId], references: [id], onDelete: SetNull)
+  method   ShippingMethod?    @relation(fields: [methodId], references: [id], onDelete: SetNull)
+  tracking ShipmentTracking[]
+
+  @@index([orderId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("shipments")
+}
+
+model ShipmentTracking {
+  id         String   @id @default(cuid())
+  shipmentId String   @map("shipment_id")
+  status     String   @db.VarChar(50)
+  location   String?  @db.VarChar(255)
+  description String? @db.Text
+  timestamp  DateTime
+  carrierData Json?   @map("carrier_data")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
+  @@index([timestamp])
+  @@index([shipmentId, timestamp])
+  @@map("shipment_tracking")
+}
+
+model Carrier {
+  id           String   @id @default(cuid())
+  name         String   @db.VarChar(255)
+  code         String   @unique @db.VarChar(50) // fedex, ups, dhl, usps
+  apiEndpoint  String   @map("api_endpoint") @db.VarChar(500)
+  apiKey       String   @map("api_key") @db.VarChar(500) // Encrypted
+  isActive     Boolean  @default(true)
+  configuration Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  shipments Shipment[]
+
+  @@index([isActive])
+  @@map("carriers")
+}
+

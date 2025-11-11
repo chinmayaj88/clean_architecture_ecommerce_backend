@@ -52,7 +52,7 @@ export class UserServiceClient implements IUserServiceClient {
       (error: AxiosError) => {
         if (error.response?.status === 404) {
           logger.warn('User not found', { userId: error.config?.url });
-        } else if (error.response?.status >= 500) {
+        } else if (error.response && error.response.status >= 500) {
           logger.error('User service error', {
             status: error.response.status,
             url: error.config?.url,

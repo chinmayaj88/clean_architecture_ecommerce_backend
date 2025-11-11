@@ -202,10 +202,11 @@ export const validatePreferenceParams = [
     .withMessage('notificationType is required and must be a string'),
 ];
 
-export function handleValidationErrors(req: Request, res: Response, next: NextFunction): void {
+export function handleValidationErrors(req: Request, _res: Response, next: NextFunction): void {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    throw new AppError(400, 'Validation failed', errors.array());
+    const errorMessages = errors.array().map(err => err.msg).join(', ');
+    throw new AppError(400, `Validation failed: ${errorMessages}`);
   }
   next();
 }

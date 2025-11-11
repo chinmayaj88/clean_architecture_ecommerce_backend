@@ -1,0 +1,153 @@
+// Discount/Promotion Service Database Schema
+// Handles coupons, promotions, discount rules, and usage tracking
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Coupon code definitions
+model Coupon {
+  id                  String        @id @default(cuid())
+  code                String        @unique
+  name                String
+  description         String?
+  type                CouponType
+  discountValue       Decimal       @db.Decimal(10, 2)
+  minimumAmount       Decimal       @default(0) @db.Decimal(10, 2)
+  maximumDiscount     Decimal?      @db.Decimal(10, 2)
+  currency            String        @default("USD")
+  usageLimit          Int?
+  usageCount          Int           @default(0)
+  usageLimitPerUser   Int?
+  startsAt            DateTime?
+  endsAt              DateTime?
+  isActive            Boolean       @default(true)
+  applicableProducts  Json?
+  applicableCategories Json?
+  excludedProducts    Json?
+  metadata            Json?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  // Relations
+  usages               CouponUsage[]
+
+  @@index([code])
+  @@index([isActive])
+  @@index([startsAt])
+  @@index([endsAt])
+  @@map("coupons")
+}
+
+// Coupon usage tracking
+model CouponUsage {
+  id            String    @id @default(cuid())
+  couponId      String
+  coupon        Coupon    @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId        String?
+  orderId       String?
+  discountAmount Decimal  @db.Decimal(10, 2)
+  usedAt        DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+
+  @@index([couponId])
+  @@index([userId])
+  @@index([orderId])
+  @@index([usedAt])
+  @@index([couponId, userId])
+  @@index([couponId, usedAt])
+  @@map("coupon_usage")
+}
+
+// Promotional campaign definitions
+model Promotion {
+  id            String           @id @default(cuid())
+  name          String
+  description   String?
+  type          PromotionType
+  status        PromotionStatus  @default(DRAFT)
+  startsAt      DateTime?
+  endsAt        DateTime?
+  isActive      Boolean          @default(false)
+  configuration Json
+  metadata      Json?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  // Relations
+  rules         PromotionRule[]
+  usages        PromotionUsage[]
+
+  @@index([status])
+  @@index([isActive])
+  @@index([startsAt])
+  @@index([endsAt])
+  @@map("promotions")
+}
+
+// Promotion rule definitions
+model PromotionRule {
+  id          String    @id @default(cuid())
+  promotionId String
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  ruleType    String
+  conditions  Json
+  actions     Json
+  priority    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([promotionId])
+  @@index([promotionId, priority])
+  @@map("promotion_rules")
+}
+
+// Promotion usage tracking
+model PromotionUsage {
+  id            String    @id @default(cuid())
+  promotionId   String
+  promotion     Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  userId        String?
+  orderId       String?
+  discountAmount Decimal  @db.Decimal(10, 2)
+  usedAt        DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+
+  @@index([promotionId])
+  @@index([userId])
+  @@index([orderId])
+  @@index([usedAt])
+  @@map("promotion_usage")
+}
+
+// Enums
+enum CouponType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+
+  @@map("coupon_type")
+}
+
+enum PromotionType {
+  BUY_X_GET_Y
+  BUNDLE
+  VOLUME_DISCOUNT
+
+  @@map("promotion_type")
+}
+
+enum PromotionStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  EXPIRED
+
+  @@map("promotion_status")
+}
+

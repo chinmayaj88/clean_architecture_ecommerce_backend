@@ -9,9 +9,13 @@ const envSchema = z.object({
   AUTH_SERVICE_URL: z.string().url().default('http://localhost:3001'),
   USER_SERVICE_URL: z.string().url().default('http://localhost:3002'),
   PRODUCT_SERVICE_URL: z.string().url().default('http://localhost:3003'),
-  CART_SERVICE_URL: z.string().url().default('http://localhost:3004'),
-  ORDER_SERVICE_URL: z.string().url().default('http://localhost:3005'),
-  PAYMENT_SERVICE_URL: z.string().url().default('http://localhost:3006'),
+  CART_SERVICE_URL: z.string().url().default('http://localhost:3006'),
+  ORDER_SERVICE_URL: z.string().url().default('http://localhost:3004'),
+  PAYMENT_SERVICE_URL: z.string().url().default('http://localhost:3005'),
+  NOTIFICATION_SERVICE_URL: z.string().url().default('http://localhost:3007'),
+  DISCOUNT_SERVICE_URL: z.string().url().default('http://localhost:3008'),
+  SHIPPING_SERVICE_URL: z.string().url().default('http://localhost:3009'),
+  RETURN_SERVICE_URL: z.string().url().default('http://localhost:3010'),
   
   // JWT secret for token validation
   JWT_SECRET: z.string().min(32),

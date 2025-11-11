@@ -1,4 +1,4 @@
-.PHONY: help build build-auth build-user build-product build-cart build-gateway test lint format dev dev-down clean install generate-prisma migrate-auth migrate-user migrate-product migrate-all seed-auth seed-user seed-product seed-all setup-auth setup-user setup-all studio-auth studio-user studio-product test-auth test-user test-product
+.PHONY: help build build-auth build-user build-product build-cart build-gateway build-notification build-discount build-shipping build-return test lint format dev dev-down clean install generate-prisma migrate-auth migrate-user migrate-product migrate-notification migrate-discount migrate-shipping migrate-return migrate-all seed-auth seed-user seed-product seed-all setup-auth setup-user setup-notification setup-discount setup-shipping setup-return setup-all studio-auth studio-user studio-product studio-notification studio-discount studio-shipping studio-return test-auth test-user test-product
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -24,6 +24,10 @@ generate-prisma: ## Generate Prisma clients for all services (for setup/developm
 	cd services/cart-service && npm run prisma:generate
 	cd services/order-service && npm run prisma:generate
 	cd services/payment-service && npm run prisma:generate
+	cd services/notification-service && npm run prisma:generate
+	cd services/discount-service && npm run prisma:generate
+	cd services/shipping-service && npm run prisma:generate
+	cd services/return-service && npm run prisma:generate
 	@echo "✅ All Prisma clients generated"
 
 build: ## Build all services (generates Prisma clients and builds each service individually)
@@ -37,7 +41,10 @@ build: ## Build all services (generates Prisma clients and builds each service i
 	cd services/order-service && npm run prisma:generate && npm run build
 	cd services/payment-service && npm run prisma:generate && npm run build
 	cd services/gateway-service && npm run build
-	cd services/notification-service && npm run build
+	cd services/notification-service && npm run prisma:generate && npm run build
+	cd services/discount-service && npm run prisma:generate && npm run build
+	cd services/shipping-service && npm run prisma:generate && npm run build
+	cd services/return-service && npm run prisma:generate && npm run build
 	@echo "✅ All services built successfully"
 
 build-auth: ## Build auth-service individually (microservice pattern)
@@ -74,6 +81,26 @@ build-gateway: ## Build gateway-service individually (microservice pattern)
 	@echo "Building gateway-service..."
 	cd services/gateway-service && npm run build
 	@echo "✅ Gateway-service built successfully"
+
+build-notification: ## Build notification-service individually (microservice pattern)
+	@echo "Building notification-service..."
+	cd services/notification-service && npm run prisma:generate && npm run build
+	@echo "✅ Notification-service built successfully"
+
+build-discount: ## Build discount-service individually (microservice pattern)
+	@echo "Building discount-service..."
+	cd services/discount-service && npm run prisma:generate && npm run build
+	@echo "✅ Discount-service built successfully"
+
+build-shipping: ## Build shipping-service individually (microservice pattern)
+	@echo "Building shipping-service..."
+	cd services/shipping-service && npm run prisma:generate && npm run build
+	@echo "✅ Shipping-service built successfully"
+
+build-return: ## Build return-service individually (microservice pattern)
+	@echo "Building return-service..."
+	cd services/return-service && npm run prisma:generate && npm run build
+	@echo "✅ Return-service built successfully"
 
 test: ## Run all tests
 	npm run test
@@ -149,6 +176,26 @@ migrate-payment: ## Run payment-service database migrations
 	cd services/payment-service && npm run prisma:generate && npm run prisma:migrate:deploy
 	@echo "✅ Payment-service migrations completed"
 
+migrate-notification: ## Run notification-service database migrations
+	@echo "Running migrations for notification-service..."
+	cd services/notification-service && npm run prisma:generate && npm run prisma:migrate:deploy
+	@echo "✅ Notification-service migrations completed"
+
+migrate-discount: ## Run discount-service database migrations
+	@echo "Running migrations for discount-service..."
+	cd services/discount-service && npm run prisma:generate && npm run prisma:migrate:deploy
+	@echo "✅ Discount-service migrations completed"
+
+migrate-shipping: ## Run shipping-service database migrations
+	@echo "Running migrations for shipping-service..."
+	cd services/shipping-service && npm run prisma:generate && npm run prisma:migrate:deploy
+	@echo "✅ Shipping-service migrations completed"
+
+migrate-return: ## Run return-service database migrations
+	@echo "Running migrations for return-service..."
+	cd services/return-service && npm run prisma:generate && npm run prisma:migrate:deploy
+	@echo "✅ Return-service migrations completed"
+
 migrate-all: ## Run migrations for all services
 	@echo "Running migrations for all services..."
 	@echo "Note: Each service generates its Prisma client before migrating to avoid conflicts"
@@ -158,6 +205,10 @@ migrate-all: ## Run migrations for all services
 	$(MAKE) migrate-cart
 	$(MAKE) migrate-order
 	$(MAKE) migrate-payment
+	$(MAKE) migrate-notification
+	$(MAKE) migrate-discount
+	$(MAKE) migrate-shipping
+	$(MAKE) migrate-return
 	@echo "✅ All migrations completed"
 
 # Database Seeding
@@ -270,6 +321,98 @@ else
 endif
 	@echo "✅ Payment-service database setup complete"
 
+setup-notification: ## Complete setup for notification-service (migrate)
+	@echo "Setting up notification-service database..."
+	@echo "Note: Ensure .env file exists with required environment variables"
+ifeq ($(DETECTED_OS),Windows)
+	@powershell -Command "if (-not (Test-Path 'services\notification-service\.env')) { Write-Host '⚠️  Warning: .env file not found. Please create services\notification-service\.env with required environment variables.' }"
+else
+	@if [ ! -f services/notification-service/.env ]; then \
+		echo "⚠️  Warning: .env file not found. Please create services/notification-service/.env with required environment variables."; \
+	fi
+endif
+	@echo "Creating initial migration if needed..."
+ifeq ($(DETECTED_OS),Windows)
+	@powershell -Command "$$migrationsPath = 'services\notification-service\prisma\migrations'; $$hasMigrations = (Test-Path $$migrationsPath) -and ((Get-ChildItem $$migrationsPath -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0); if (-not $$hasMigrations) { Write-Host 'No migrations found, creating initial migration...'; Set-Location services\notification-service; npm.cmd run prisma:generate; npx.cmd prisma migrate dev --name init --skip-seed; Set-Location ..\.. } else { Write-Host 'Migrations found, running migrate-notification...'; Set-Location services\notification-service; npm.cmd run prisma:generate; npm.cmd run prisma:migrate:deploy; Set-Location ..\.. }"
+else
+	@if [ ! -d "services/notification-service/prisma/migrations" ] || [ -z "$$(ls -A services/notification-service/prisma/migrations 2>/dev/null)" ]; then \
+		echo "No migrations found, creating initial migration..."; \
+		cd services/notification-service && npm run prisma:generate && npx prisma migrate dev --name init --skip-seed || true; \
+	else \
+		$(MAKE) migrate-notification; \
+	fi
+endif
+	@echo "✅ Notification-service database setup complete"
+
+setup-discount: ## Complete setup for discount-service (migrate)
+	@echo "Setting up discount-service database..."
+	@echo "Note: Ensure .env file exists with required environment variables"
+ifeq ($(DETECTED_OS),Windows)
+	@powershell -Command "if (-not (Test-Path 'services\discount-service\.env')) { Write-Host '⚠️  Warning: .env file not found. Please create services\discount-service\.env with required environment variables.' }"
+else
+	@if [ ! -f services/discount-service/.env ]; then \
+		echo "⚠️  Warning: .env file not found. Please create services/discount-service/.env with required environment variables."; \
+	fi
+endif
+	@echo "Creating initial migration if needed..."
+ifeq ($(DETECTED_OS),Windows)
+	@powershell -Command "$$migrationsPath = 'services\discount-service\prisma\migrations'; $$hasMigrations = (Test-Path $$migrationsPath) -and ((Get-ChildItem $$migrationsPath -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0); if (-not $$hasMigrations) { Write-Host 'No migrations found, creating initial migration...'; Set-Location services\discount-service; npm.cmd run prisma:generate; npx.cmd prisma migrate dev --name init --skip-seed; Set-Location ..\.. } else { Write-Host 'Migrations found, running migrate-discount...'; Set-Location services\discount-service; npm.cmd run prisma:generate; npm.cmd run prisma:migrate:deploy; Set-Location ..\.. }"
+else
+	@if [ ! -d "services/discount-service/prisma/migrations" ] || [ -z "$$(ls -A services/discount-service/prisma/migrations 2>/dev/null)" ]; then \
+		echo "No migrations found, creating initial migration..."; \
+		cd services/discount-service && npm run prisma:generate && npx prisma migrate dev --name init --skip-seed || true; \
+	else \
+		$(MAKE) migrate-discount; \
+	fi
+endif
+	@echo "✅ Discount-service database setup complete"
+
+setup-shipping: ## Complete setup for shipping-service (migrate)
+	@echo "Setting up shipping-service database..."
+	@echo "Note: Ensure .env file exists with required environment variables"
+ifeq ($(DETECTED_OS),Windows)
+	@powershell -Command "if (-not (Test-Path 'services\shipping-service\.env')) { Write-Host '⚠️  Warning: .env file not found. Please create services\shipping-service\.env with required environment variables.' }"
+else
+	@if [ ! -f services/shipping-service/.env ]; then \
+		echo "⚠️  Warning: .env file not found. Please create services/shipping-service/.env with required environment variables."; \
+	fi
+endif
+	@echo "Creating initial migration if needed..."
+ifeq ($(DETECTED_OS),Windows)
+	@powershell -Command "$$migrationsPath = 'services\shipping-service\prisma\migrations'; $$hasMigrations = (Test-Path $$migrationsPath) -and ((Get-ChildItem $$migrationsPath -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0); if (-not $$hasMigrations) { Write-Host 'No migrations found, creating initial migration...'; Set-Location services\shipping-service; npm.cmd run prisma:generate; npx.cmd prisma migrate dev --name init --skip-seed; Set-Location ..\.. } else { Write-Host 'Migrations found, running migrate-shipping...'; Set-Location services\shipping-service; npm.cmd run prisma:generate; npm.cmd run prisma:migrate:deploy; Set-Location ..\.. }"
+else
+	@if [ ! -d "services/shipping-service/prisma/migrations" ] || [ -z "$$(ls -A services/shipping-service/prisma/migrations 2>/dev/null)" ]; then \
+		echo "No migrations found, creating initial migration..."; \
+		cd services/shipping-service && npm run prisma:generate && npx prisma migrate dev --name init --skip-seed || true; \
+	else \
+		$(MAKE) migrate-shipping; \
+	fi
+endif
+	@echo "✅ Shipping-service database setup complete"
+
+setup-return: ## Complete setup for return-service (migrate)
+	@echo "Setting up return-service database..."
+	@echo "Note: Ensure .env file exists with required environment variables"
+ifeq ($(DETECTED_OS),Windows)
+	@powershell -Command "if (-not (Test-Path 'services\return-service\.env')) { Write-Host '⚠️  Warning: .env file not found. Please create services\return-service\.env with required environment variables.' }"
+else
+	@if [ ! -f services/return-service/.env ]; then \
+		echo "⚠️  Warning: .env file not found. Please create services/return-service/.env with required environment variables."; \
+	fi
+endif
+	@echo "Creating initial migration if needed..."
+ifeq ($(DETECTED_OS),Windows)
+	@powershell -Command "$$migrationsPath = 'services\return-service\prisma\migrations'; $$hasMigrations = (Test-Path $$migrationsPath) -and ((Get-ChildItem $$migrationsPath -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0); if (-not $$hasMigrations) { Write-Host 'No migrations found, creating initial migration...'; Set-Location services\return-service; npm.cmd run prisma:generate; npx.cmd prisma migrate dev --name init --skip-seed; Set-Location ..\.. } else { Write-Host 'Migrations found, running migrate-return...'; Set-Location services\return-service; npm.cmd run prisma:generate; npm.cmd run prisma:migrate:deploy; Set-Location ..\.. }"
+else
+	@if [ ! -d "services/return-service/prisma/migrations" ] || [ -z "$$(ls -A services/return-service/prisma/migrations 2>/dev/null)" ]; then \
+		echo "No migrations found, creating initial migration..."; \
+		cd services/return-service && npm run prisma:generate && npx prisma migrate dev --name init --skip-seed || true; \
+	else \
+		$(MAKE) migrate-return; \
+	fi
+endif
+	@echo "✅ Return-service database setup complete"
+
 setup-all: ## Complete setup for all services (migrate + seed)
 	@echo "Setting up all service databases..."
 	@echo "Note: Each service generates its Prisma client individually during setup"
@@ -278,6 +421,10 @@ setup-all: ## Complete setup for all services (migrate + seed)
 	$(MAKE) setup-user
 	$(MAKE) setup-cart
 	$(MAKE) setup-payment
+	$(MAKE) setup-notification
+	$(MAKE) setup-discount
+	$(MAKE) setup-shipping
+	$(MAKE) setup-return
 	@echo "✅ All service databases setup complete"
 	@echo ""
 	@echo "💡 Tip: When building services individually (as microservices should be),"
@@ -297,4 +444,16 @@ studio-product: ## Open Prisma Studio for product-service (when implemented)
 
 studio-cart: ## Open Prisma Studio for cart-service
 	cd services/cart-service && npx prisma studio --port 5557
+
+studio-notification: ## Open Prisma Studio for notification-service
+	cd services/notification-service && npx prisma studio --port 5558
+
+studio-discount: ## Open Prisma Studio for discount-service
+	cd services/discount-service && npx prisma studio --port 5559
+
+studio-shipping: ## Open Prisma Studio for shipping-service
+	cd services/shipping-service && npx prisma studio --port 5560
+
+studio-return: ## Open Prisma Studio for return-service
+	cd services/return-service && npx prisma studio --port 5561
 

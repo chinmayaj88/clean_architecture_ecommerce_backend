@@ -15,7 +15,7 @@ import {
   PaymentRefundedEvent,
 } from '../../ports/interfaces/IEventConsumer';
 import { createLogger } from '../logging/logger';
-import { UserServiceClient } from '../clients/UserServiceClient';
+import { IUserServiceClient } from '../clients/UserServiceClient';
 import { getEnvConfig } from '../../config/env';
 
 const logger = createLogger();
@@ -25,7 +25,7 @@ export class NotificationEventHandlers {
   constructor(
     private readonly sendNotificationUseCase: SendNotificationUseCase,
     private readonly emailTemplateRepository: IEmailTemplateRepository,
-    private readonly userServiceClient: UserServiceClient
+    private readonly userServiceClient: IUserServiceClient
   ) {}
 
   /**

@@ -1,0 +1,436 @@
+openapi: 3.0.0
+info:
+  title: Discount/Promotion Service API
+  version: 1.0.0
+  description: API for managing coupons, promotions, and discounts
+
+servers:
+  - url: http://localhost:3008
+    description: Development server
+
+paths:
+  /api/v1/coupons:
+    post:
+      summary: Create a new coupon
+      tags: [Coupons]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCouponRequest'
+      responses:
+        '201':
+          description: Coupon created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponResponse'
+    get:
+      summary: List coupons
+      tags: [Coupons]
+      parameters:
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [PERCENTAGE, FIXED_AMOUNT, FREE_SHIPPING]
+        - name: code
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of coupons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CouponResponse'
+
+  /api/v1/coupons/{id}:
+    get:
+      summary: Get coupon by ID
+      tags: [Coupons]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Coupon details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponResponse'
+    put:
+      summary: Update coupon
+      tags: [Coupons]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCouponRequest'
+      responses:
+        '200':
+          description: Coupon updated successfully
+    delete:
+      summary: Delete coupon
+      tags: [Coupons]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Coupon deleted successfully
+
+  /api/v1/coupons/code/{code}:
+    get:
+      summary: Get coupon by code
+      tags: [Coupons]
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Coupon details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponResponse'
+
+  /api/v1/coupons/{id}/activate:
+    post:
+      summary: Activate coupon
+      tags: [Coupons]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Coupon activated successfully
+
+  /api/v1/coupons/{id}/deactivate:
+    post:
+      summary: Deactivate coupon
+      tags: [Coupons]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Coupon deactivated successfully
+
+  /api/v1/promotions:
+    post:
+      summary: Create a new promotion
+      tags: [Promotions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePromotionRequest'
+      responses:
+        '201':
+          description: Promotion created successfully
+    get:
+      summary: List promotions
+      tags: [Promotions]
+      responses:
+        '200':
+          description: List of promotions
+
+  /api/v1/promotions/{id}:
+    get:
+      summary: Get promotion by ID
+      tags: [Promotions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Promotion details
+    put:
+      summary: Update promotion
+      tags: [Promotions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Promotion updated successfully
+    delete:
+      summary: Delete promotion
+      tags: [Promotions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Promotion deleted successfully
+
+  /api/v1/discounts/validate:
+    post:
+      summary: Validate coupon code
+      tags: [Discounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateCouponRequest'
+      responses:
+        '200':
+          description: Coupon validation result
+        '400':
+          description: Invalid coupon
+
+  /api/v1/discounts/calculate:
+    post:
+      summary: Calculate discount amount
+      tags: [Discounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalculateDiscountRequest'
+      responses:
+        '200':
+          description: Discount calculated successfully
+
+  /api/v1/discounts/apply:
+    post:
+      summary: Apply coupon to cart
+      tags: [Discounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyCouponRequest'
+      responses:
+        '200':
+          description: Coupon applied successfully
+
+  /api/v1/discounts/evaluate-promotions:
+    post:
+      summary: Evaluate applicable promotions for cart
+      tags: [Discounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluatePromotionsRequest'
+      responses:
+        '200':
+          description: Promotions evaluated successfully
+
+components:
+  schemas:
+    CreateCouponRequest:
+      type: object
+      required:
+        - code
+        - name
+        - type
+        - discountValue
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [PERCENTAGE, FIXED_AMOUNT, FREE_SHIPPING]
+        discountValue:
+          type: number
+        minimumAmount:
+          type: number
+        maximumDiscount:
+          type: number
+        currency:
+          type: string
+          default: USD
+        usageLimit:
+          type: integer
+        usageLimitPerUser:
+          type: integer
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+          default: true
+
+    CouponResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        discountValue:
+          type: number
+        isActive:
+          type: boolean
+
+    ValidateCouponRequest:
+      type: object
+      required:
+        - code
+        - orderAmount
+      properties:
+        code:
+          type: string
+        userId:
+          type: string
+        orderAmount:
+          type: number
+        productIds:
+          type: array
+          items:
+            type: string
+        categoryIds:
+          type: array
+          items:
+            type: string
+
+    CalculateDiscountRequest:
+      type: object
+      required:
+        - coupon
+        - orderAmount
+      properties:
+        coupon:
+          type: object
+        orderAmount:
+          type: number
+        shippingCost:
+          type: number
+
+    ApplyCouponRequest:
+      type: object
+      required:
+        - code
+        - orderAmount
+      properties:
+        code:
+          type: string
+        userId:
+          type: string
+        orderId:
+          type: string
+        cartId:
+          type: string
+        orderAmount:
+          type: number
+        shippingCost:
+          type: number
+        productIds:
+          type: array
+          items:
+            type: string
+        categoryIds:
+          type: array
+          items:
+            type: string
+
+    EvaluatePromotionsRequest:
+      type: object
+      required:
+        - cartTotal
+      properties:
+        cartItems:
+          type: array
+          items:
+            type: object
+        cartTotal:
+          type: number
+
+    CreatePromotionRequest:
+      type: object
+      required:
+        - name
+        - type
+        - configuration
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [BUY_X_GET_Y, BUNDLE, VOLUME_DISCOUNT]
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, PAUSED, EXPIRED]
+        configuration:
+          type: object
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+
+    UpdateCouponRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+        discountValue:
+          type: number
+        isActive:
+          type: boolean
+

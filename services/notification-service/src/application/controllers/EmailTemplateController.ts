@@ -40,7 +40,7 @@ export class EmailTemplateController {
    * Get all email templates
    * GET /api/v1/templates
    */
-  async getTemplates(req: RequestWithId, res: Response): Promise<void> {
+  async getTemplates(_req: RequestWithId, res: Response): Promise<void> {
     try {
       const templates = await this.emailTemplateRepository.findAll();
       sendSuccess(res, 'Templates retrieved successfully', templates);

@@ -119,6 +119,86 @@ services:
     networks:
       - ecommerce-network
 
+  # PostgreSQL database for notification-service
+  postgres-notification:
+    image: postgres:16-alpine
+    container_name: postgres-notification
+    environment:
+      POSTGRES_USER: notification_user
+      POSTGRES_PASSWORD: notification_pass
+      POSTGRES_DB: notification_db
+    ports:
+      - "5439:5432"
+    volumes:
+      - postgres-notification-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notification_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-network
+
+  # PostgreSQL database for discount-service
+  postgres-discount:
+    image: postgres:16-alpine
+    container_name: postgres-discount
+    environment:
+      POSTGRES_USER: discount_user
+      POSTGRES_PASSWORD: discount_pass
+      POSTGRES_DB: discount_db
+    ports:
+      - "5440:5432"
+    volumes:
+      - postgres-discount-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U discount_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-network
+
+  # PostgreSQL database for shipping-service
+  postgres-shipping:
+    image: postgres:16-alpine
+    container_name: postgres-shipping
+    environment:
+      POSTGRES_USER: shipping_user
+      POSTGRES_PASSWORD: shipping_pass
+      POSTGRES_DB: shipping_db
+    ports:
+      - "5441:5432"
+    volumes:
+      - postgres-shipping-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shipping_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-network
+
+  # PostgreSQL database for return-service
+  postgres-return:
+    image: postgres:16-alpine
+    container_name: postgres-return
+    environment:
+      POSTGRES_USER: return_user
+      POSTGRES_PASSWORD: return_pass
+      POSTGRES_DB: return_db
+    ports:
+      - "5442:5432"
+    volumes:
+      - postgres-return-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U return_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-network
+
   # Redis for caching and distributed rate limiting
   redis:
     image: redis:7.4-alpine
@@ -175,6 +255,10 @@ services:
       - postgres-cart
       - postgres-order
       - postgres-payment
+      - postgres-notification
+      - postgres-discount
+      - postgres-shipping
+      - postgres-return
     networks:
       - ecommerce-network
 
@@ -185,6 +269,10 @@ volumes:
   postgres-cart-data:
   postgres-order-data:
   postgres-payment-data:
+  postgres-notification-data:
+  postgres-discount-data:
+  postgres-shipping-data:
+  postgres-return-data:
   redis-data:
   localstack-data:
 

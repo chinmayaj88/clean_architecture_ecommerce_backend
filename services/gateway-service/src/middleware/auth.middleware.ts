@@ -89,3 +89,29 @@ export function optionalAuth(req: AuthenticatedRequest, _res: Response, next: Ne
   }
 }
 
+// Role-based access control
+export function requireRole(...roles: string[]) {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+      return;
+    }
+
+    const userRoles = req.user.roles || [];
+    const hasRole = roles.some(role => userRoles.includes(role));
+
+    if (!hasRole) {
+      res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions',
+      });
+      return;
+    }
+
+    next();
+  };
+}
+

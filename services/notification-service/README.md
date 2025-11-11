@@ -67,7 +67,45 @@ The service consumes the following events:
 
 ## Environment Variables
 
-See `.env.example` for required environment variables.
+See `.env.example` for all available environment variables.
+
+### Required Variables
+- `DATABASE_URL` - PostgreSQL connection string
+
+### Optional Variables (with defaults)
+- `NODE_ENV` - Environment (development, staging, production, test) - Default: development
+- `PORT` - Server port - Default: 3007
+- `EMAIL_PROVIDER` - Email provider (mock, sendgrid, nodemailer, aws-ses) - Default: mock
+- `SMS_PROVIDER` - SMS provider (mock, twilio) - Default: mock
+- `PUSH_PROVIDER` - Push provider (mock, fcm, apns) - Default: mock
+- `EVENT_CONSUMER_TYPE` - Event consumer (mock, sqs) - Default: mock
+- `EVENT_PUBLISHER_TYPE` - Event publisher (mock, sns) - Default: mock
+
+### Provider-Specific Variables
+
+**SendGrid:**
+- `SENDGRID_API_KEY` - Required if using SendGrid
+
+**SMTP (Nodemailer):**
+- `SMTP_HOST` - SMTP server host
+- `SMTP_PORT` - SMTP server port
+- `SMTP_USER` - SMTP username
+- `SMTP_PASSWORD` - SMTP password
+- `SMTP_FROM_EMAIL` - Default sender email
+- `SMTP_FROM_NAME` - Default sender name
+
+**Twilio:**
+- `TWILIO_ACCOUNT_SID` - Required if using Twilio
+- `TWILIO_AUTH_TOKEN` - Required if using Twilio
+- `TWILIO_PHONE_NUMBER` - Required if using Twilio
+
+**AWS (SES/SQS/SNS):**
+- `AWS_REGION` - AWS region - Default: us-east-1
+- `AWS_ACCESS_KEY_ID` - AWS access key
+- `AWS_SECRET_ACCESS_KEY` - AWS secret key
+- `SQS_QUEUE_URL` - SQS queue URL for consuming events
+- `SNS_TOPIC_ARN` - SNS topic ARN for publishing events
+- `AWS_SES_REGION` - AWS SES region (if using AWS SES for email)
 
 ## Setup
 

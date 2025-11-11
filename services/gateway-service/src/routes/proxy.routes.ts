@@ -186,40 +186,40 @@ const publicAuthRoutes = [
 ];
 
 // Check if route requires authentication
-function requiresAuth(path: string): boolean {
+function requiresAuth(path: string, method: string = 'GET'): boolean {
   // Auth service public routes
   if (path.startsWith('/api/v1/auth/')) {
     return !publicAuthRoutes.some(route => path.startsWith(route));
   }
 
   // Product service - most routes are public
-  if (path.startsWith('/api/v1/products/')) {
+  if (path.startsWith('/api/v1/products')) {
     // Only admin routes need auth
     return path.includes('/admin') || path.includes('/moderate');
   }
 
   // User service - all routes require auth
-  if (path.startsWith('/api/v1/users/')) {
+  if (path.startsWith('/api/v1/users')) {
     return true;
   }
 
   // Security routes require auth
-  if (path.startsWith('/api/v1/security/')) {
+  if (path.startsWith('/api/v1/security')) {
     return true;
   }
 
   // Cart service - merge endpoint requires auth
-  if (path.startsWith('/api/v1/carts/')) {
+  if (path.startsWith('/api/v1/carts')) {
     return path.includes('/merge');
   }
 
   // Order service - all routes require auth
-  if (path.startsWith('/api/v1/orders/')) {
+  if (path.startsWith('/api/v1/orders')) {
     return true;
   }
 
   // Payment service - all routes require auth except webhooks
-  if (path.startsWith('/api/v1/payments/') || path.startsWith('/api/v1/payment-methods/')) {
+  if (path.startsWith('/api/v1/payments') || path.startsWith('/api/v1/payment-methods')) {
     return true;
   }
 
@@ -228,12 +228,51 @@ function requiresAuth(path: string): boolean {
     return false;
   }
 
+  // Discount service - management routes require auth
+  if (path.startsWith('/api/v1/coupons') || path.startsWith('/api/v1/promotions')) {
+    // POST, PUT, DELETE require auth (GET is public)
+    // Note: The service handles its own auth, but we apply conditional auth at gateway
+    return method !== 'GET';
+  }
+
+  // Discount validation/calculation - optional auth
+  if (path.startsWith('/api/v1/discounts')) {
+    // Apply endpoint requires auth, validate/calculate are optional
+    return path.includes('/apply');
+  }
+
+  // Notification service - all routes require auth
+  if (path.startsWith('/api/v1/notifications') || path.startsWith('/api/v1/templates') || path.startsWith('/api/v1/preferences')) {
+    return true;
+  }
+
+  // Shipping service - management routes require auth
+  if (path.startsWith('/api/v1/zones') || path.startsWith('/api/v1/methods')) {
+    return method !== 'GET';
+  }
+
+  // Shipping service - shipment management requires auth
+  if (path.startsWith('/api/v1/shipments')) {
+    // Track by number is public, others require auth
+    return !path.includes('/track/');
+  }
+
+  // Shipping rate calculation - optional auth
+  if (path.startsWith('/api/v1/rates')) {
+    return false; // Public
+  }
+
+  // Return service - all routes require auth
+  if (path.startsWith('/api/v1/returns')) {
+    return true;
+  }
+
   return false;
 }
 
 // Middleware to conditionally apply auth
 function conditionalAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
-  if (requiresAuth(req.path)) {
+  if (requiresAuth(req.path, req.method)) {
     authenticate(req, res, next);
   } else {
     optionalAuth(req, res, next);
@@ -346,6 +385,123 @@ export function createProxyRoutes(): Router {
       '^/api/v1/webhooks': '/api/v1/webhooks',
     }, {
       cacheable: false, // Webhooks should not be cached
+    })
+  );
+
+  // Discount service proxy
+  // Note: The discount service handles its own auth, but we apply auth at gateway level too
+  router.use(
+    '/api/v1/coupons',
+    conditionalAuth, // GET is public, POST/PUT/DELETE require auth (handled by service)
+    createServiceProxy('discount-service', config.DISCOUNT_SERVICE_URL, {
+      '^/api/v1/coupons': '/api/v1/coupons',
+    }, {
+      cacheable: false, // Coupon data changes frequently
+    })
+  );
+
+  router.use(
+    '/api/v1/promotions',
+    conditionalAuth, // GET is public, POST/PUT/DELETE require auth (handled by service)
+    createServiceProxy('discount-service', config.DISCOUNT_SERVICE_URL, {
+      '^/api/v1/promotions': '/api/v1/promotions',
+    }, {
+      cacheable: false, // Promotion data changes frequently
+    })
+  );
+
+  router.use(
+    '/api/v1/discounts',
+    conditionalAuth, // Validation can be public, application requires auth
+    createServiceProxy('discount-service', config.DISCOUNT_SERVICE_URL, {
+      '^/api/v1/discounts': '/api/v1/discounts',
+    }, {
+      cacheable: false, // Discount calculations are user-specific
+    })
+  );
+
+  // Notification service proxy (requires auth)
+  router.use(
+    '/api/v1/notifications',
+    authenticate,
+    createServiceProxy('notification-service', config.NOTIFICATION_SERVICE_URL, {
+      '^/api/v1/notifications': '/api/v1/notifications',
+    }, {
+      cacheable: false, // Notification data is user-specific
+    })
+  );
+
+  router.use(
+    '/api/v1/templates',
+    authenticate, // Template management requires auth (admin check handled by service)
+    createServiceProxy('notification-service', config.NOTIFICATION_SERVICE_URL, {
+      '^/api/v1/templates': '/api/v1/templates',
+    }, {
+      cacheable: false, // Template data changes infrequently but shouldn't be cached
+    })
+  );
+
+  router.use(
+    '/api/v1/preferences',
+    authenticate,
+    createServiceProxy('notification-service', config.NOTIFICATION_SERVICE_URL, {
+      '^/api/v1/preferences': '/api/v1/preferences',
+    }, {
+      cacheable: false, // Preference data is user-specific
+    })
+  );
+
+  // Shipping service proxy
+  router.use(
+    '/api/v1/rates',
+    conditionalAuth, // Rate calculation can be public
+    createServiceProxy('shipping-service', config.SHIPPING_SERVICE_URL, {
+      '^/api/v1/rates': '/api/v1/rates',
+    }, {
+      cacheable: false, // Rate calculations are dynamic
+    })
+  );
+
+  router.use(
+    '/api/v1/shipments',
+    authenticate, // Shipment management requires auth
+    createServiceProxy('shipping-service', config.SHIPPING_SERVICE_URL, {
+      '^/api/v1/shipments': '/api/v1/shipments',
+    }, {
+      cacheable: false, // Shipment data is user-specific
+    })
+  );
+
+  router.use(
+    '/api/v1/zones',
+    conditionalAuth, // GET is public, management requires auth
+    createServiceProxy('shipping-service', config.SHIPPING_SERVICE_URL, {
+      '^/api/v1/zones': '/api/v1/zones',
+    }, {
+      cacheable: true,
+      cacheTTL: 300000, // 5 minutes cache for zones (they don't change often)
+    })
+  );
+
+  router.use(
+    '/api/v1/methods',
+    conditionalAuth, // GET is public, management requires auth
+    createServiceProxy('shipping-service', config.SHIPPING_SERVICE_URL, {
+      '^/api/v1/methods': '/api/v1/methods',
+    }, {
+      cacheable: true,
+      cacheTTL: 300000, // 5 minutes cache for methods
+    })
+  );
+
+  // Return service proxy (requires auth)
+  router.use(
+    '/api/v1/returns',
+    authenticate, // All return routes require authentication
+    createServiceProxy('return-service', config.RETURN_SERVICE_URL, {
+      '^/api/v1/returns': '/api/v1/returns',
+    }, {
+      cacheable: false, // Return data is user-specific
     })
   );
 

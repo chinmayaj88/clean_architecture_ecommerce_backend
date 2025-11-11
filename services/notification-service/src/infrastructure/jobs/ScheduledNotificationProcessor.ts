@@ -1,6 +1,6 @@
 import { INotificationRepository } from '../../ports/interfaces/INotificationRepository';
 import { SendNotificationUseCase, SendNotificationInput } from '../../core/use-cases/SendNotificationUseCase';
-import { NotificationStatus, NotificationType } from '../../core/entities/Notification';
+import { NotificationType } from '../../core/entities/Notification';
 import { createLogger } from '../logging/logger';
 import { getEnvConfig } from '../../config/env';
 

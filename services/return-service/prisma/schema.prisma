@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ReturnRequest {
+  id            String   @id @default(cuid())
+  orderId      String   @map("order_id") // References order-service orders.id
+  userId       String   @map("user_id") // References auth-service users.id
+  rmaNumber    String   @unique @map("rma_number") @db.VarChar(50)
+  status       String   @default("pending") @db.VarChar(50) // pending, approved, rejected, in_transit, received, processed, closed
+  returnReason String   @map("return_reason") @db.VarChar(50) // defective, wrong_item, not_as_described, changed_mind, other
+  returnNotes  String?  @map("return_notes") @db.Text
+  refundMethod String   @map("refund_method") @db.VarChar(50) // original_payment, store_credit, exchange
+  refundAmount Decimal  @default(0) @map("refund_amount") @db.Decimal(10, 2)
+  currency     String   @default("USD") @db.VarChar(3)
+  requestedAt  DateTime @default(now()) @map("requested_at")
+  approvedAt   DateTime? @map("approved_at")
+  rejectedAt   DateTime? @map("rejected_at")
+  receivedAt   DateTime? @map("received_at")
+  processedAt  DateTime? @map("processed_at")
+  closedAt     DateTime? @map("closed_at")
+  metadata     Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  items         ReturnItem[]
+  authorization ReturnAuthorization?
+  statusHistory ReturnStatusHistory[]
+  refunds       Refund[]
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([status])
+  @@index([requestedAt])
+  @@index([userId, status])
+  @@map("return_requests")
+}
+
+model ReturnItem {
+  id             String   @id @default(cuid())
+  returnRequestId String  @map("return_request_id")
+  orderItemId   String   @map("order_item_id") // References order-service order_items.id
+  productId     String   @map("product_id") // References product-service products.id
+  variantId     String?  @map("variant_id") // References product-service product_variants.id
+  productName   String   @map("product_name") @db.VarChar(255)
+  productSku    String   @map("product_sku") @db.VarChar(100)
+  quantity      Int
+  unitPrice     Decimal  @map("unit_price") @db.Decimal(10, 2)
+  refundAmount  Decimal  @map("refund_amount") @db.Decimal(10, 2)
+  returnReason  String?  @map("return_reason") @db.VarChar(50)
+  condition     String   @db.VarChar(20) // new, used, damaged, defective
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  returnRequest ReturnRequest @relation(fields: [returnRequestId], references: [id], onDelete: Cascade)
+
+  @@index([returnRequestId])
+  @@index([productId])
+  @@map("return_items")
+}
+
+model ReturnAuthorization {
+  id                String   @id @default(cuid())
+  returnRequestId   String   @unique @map("return_request_id")
+  rmaNumber         String   @unique @map("rma_number") @db.VarChar(50)
+  returnAddress     Json     @map("return_address")
+  returnInstructions String? @map("return_instructions") @db.Text
+  trackingNumber    String?  @map("tracking_number") @db.VarChar(100)
+  expiresAt         DateTime? @map("expires_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  returnRequest ReturnRequest @relation(fields: [returnRequestId], references: [id], onDelete: Cascade)
+  tracking      ReturnTracking[]
+
+  @@map("return_authorizations")
+}
+
+model ReturnStatusHistory {
+  id             String   @id @default(cuid())
+  returnRequestId String  @map("return_request_id")
+  status         String   @db.VarChar(50)
+  previousStatus String?  @map("previous_status") @db.VarChar(50)
+  changedBy      String   @map("changed_by") @db.VarChar(25)
+  notes          String?   @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  returnRequest ReturnRequest @relation(fields: [returnRequestId], references: [id], onDelete: Cascade)
+
+  @@index([returnRequestId])
+  @@index([createdAt])
+  @@index([returnRequestId, createdAt])
+  @@map("return_status_history")
+}
+
+model ReturnTracking {
+  id            String   @id @default(cuid())
+  authorizationId String @map("authorization_id")
+  status        String   @db.VarChar(50)
+  location      String?  @db.VarChar(255)
+  description   String?  @db.Text
+  timestamp     DateTime
+  carrierData   Json?    @map("carrier_data")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  authorization ReturnAuthorization @relation(fields: [authorizationId], references: [id], onDelete: Cascade)
+
+  @@index([authorizationId])
+  @@index([timestamp])
+  @@index([authorizationId, timestamp])
+  @@map("return_tracking")
+}
+
+model Refund {
+  id            String   @id @default(cuid())
+  returnRequestId String @map("return_request_id")
+  paymentId     String?  @map("payment_id") // References payment-service payments.id
+  orderId       String   @map("order_id") // References order-service orders.id
+  userId        String   @map("user_id") // References auth-service users.id
+  refundMethod  String   @map("refund_method") @db.VarChar(50) // original_payment, store_credit
+  amount        Decimal  @db.Decimal(10, 2)
+  currency      String   @default("USD") @db.VarChar(3)
+  status        String   @default("pending") @db.VarChar(20) // pending, processing, completed, failed
+  reason        String?  @db.VarChar(255)
+  processedAt   DateTime? @map("processed_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  returnRequest ReturnRequest @relation(fields: [returnRequestId], references: [id], onDelete: Cascade)
+
+  @@index([returnRequestId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("refunds")
+}
+

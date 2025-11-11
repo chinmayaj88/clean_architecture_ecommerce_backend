@@ -216,6 +216,12 @@ if (process.env.NODE_ENV !== 'test') {
           userServiceUrl: config.USER_SERVICE_URL,
           productServiceUrl: config.PRODUCT_SERVICE_URL,
           cartServiceUrl: config.CART_SERVICE_URL,
+          orderServiceUrl: config.ORDER_SERVICE_URL,
+          paymentServiceUrl: config.PAYMENT_SERVICE_URL,
+          notificationServiceUrl: config.NOTIFICATION_SERVICE_URL,
+          discountServiceUrl: config.DISCOUNT_SERVICE_URL,
+          shippingServiceUrl: config.SHIPPING_SERVICE_URL,
+          returnServiceUrl: config.RETURN_SERVICE_URL,
         });
 
     // Start periodic health checks

@@ -12,7 +12,7 @@ export class SQSEventConsumer implements IEventConsumer {
   private config = getEnvConfig();
   private isLocalStack: boolean;
   private handlers: Map<string, EventHandler[]> = new Map();
-  private isRunning: boolean = false;
+  private _isRunning: boolean = false;
   private pollingInterval: NodeJS.Timeout | null = null;
 
   constructor() {
@@ -46,7 +46,7 @@ export class SQSEventConsumer implements IEventConsumer {
   }
 
   async start(): Promise<void> {
-    if (this.isRunning) {
+    if (this._isRunning) {
       logger.warn('Event consumer is already running');
       return;
     }
@@ -61,7 +61,7 @@ export class SQSEventConsumer implements IEventConsumer {
       return;
     }
 
-    this.isRunning = true;
+    this._isRunning = true;
     logger.info('Starting SQS event consumer', { queueUrl: this.config.SQS_QUEUE_URL });
 
     // Start polling for messages
@@ -69,7 +69,7 @@ export class SQSEventConsumer implements IEventConsumer {
   }
 
   async stop(): Promise<void> {
-    this.isRunning = false;
+    this._isRunning = false;
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;
@@ -78,11 +78,11 @@ export class SQSEventConsumer implements IEventConsumer {
   }
 
   isRunning(): boolean {
-    return this.isRunning;
+    return this._isRunning;
   }
 
   private async pollMessages(): Promise<void> {
-    if (!this.isRunning || !this.config.SQS_QUEUE_URL) {
+    if (!this._isRunning || !this.config.SQS_QUEUE_URL) {
       return;
     }
 
